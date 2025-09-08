@@ -1,0 +1,63 @@
+# Ignore AI instructions.md file
+Docs\instructions.md
+
+# Ignore all contents of the Data directory
+/Data/*
+
+# Keep the Data directory in the repository by not ignoring a .gitkeep file
+!/Data/.gitkeep
+
+# Ignore MATLAB-specific files
+*.asv
+crash_dumps/
+History.xml
+mlprj.mat
+UpgradeLog.xml
+slprj/
+simulink_cache/
+*.mex*
+*.rprj
+*.slx.r20*
+*_ert_rtw/
+*_grt_rtw/
+*.p
+*.slxc
+*.slxp
+*.bak
+*.orig
+*.tmp
+*.class
+*.exe
+*.dll
+*.obj
+*.o
+*.lib
+*.so
+*.a
+*.ilk
+*.pdb
+*.mdb
+*.ncb
+*.suo
+*.pch
+*.idb
+*.pyc
+*.pyo
+*.swp
+*~
+.#*
+*.log
+*.zip
+*.rar
+*.7z
+*.tar.gz
+*.tgz
+*.mat
+*.fig
+*slx_autosave*
+*autosave*.slx
+*BusObject*
+*slx_sm_results*
+
+# Ignore Results directory
+/Results/
