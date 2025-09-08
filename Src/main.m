@@ -52,6 +52,7 @@ try
 catch ME
     error('加载真值轨迹失败: %s', ME.message);
 end
+raw_gt_traj = gt_traj;
 
 %% --- 3. 处理估计轨迹并计算ATE ---
 trajectory_results = {}; % 存储所有轨迹的结果
@@ -63,6 +64,7 @@ if corrupted_exists
     fprintf('\n正在处理 corrupted 轨迹...\n');
     try
         [est_timestamps, est_traj] = readTrajectory(est_corrupted_path);
+        raw_corr_traj = est_traj;
         [ate_metrics, aligned_est_traj, gt_associated_traj] = alignAndComputeATE(gt_timestamps, gt_traj, est_timestamps, est_traj);
         
         trajectory_results{end+1} = struct('ate_metrics', ate_metrics, 'aligned_est_traj', aligned_est_traj, 'gt_associated_traj', gt_associated_traj);
@@ -87,6 +89,7 @@ if optimized_exists
     fprintf('\n正在处理 optimized 轨迹...\n');
     try
         [est_timestamps, est_traj] = readTrajectory(est_optimized_path);
+        raw_opt_traj = est_traj;
         [ate_metrics, aligned_est_traj, gt_associated_traj] = alignAndComputeATE(gt_timestamps, gt_traj, est_timestamps, est_traj);
         
         trajectory_results{end+1} = struct('ate_metrics', ate_metrics, 'aligned_est_traj', aligned_est_traj, 'gt_associated_traj', gt_associated_traj);
@@ -111,6 +114,26 @@ fprintf('\n正在生成可视化结果...\n');
 all_figures = [];
 figure_names = {};
 
+% 4.0 原始轨迹图
+fig_raw = figure('Name', 'Trajectories (Raw)');
+ax = gca;
+
+% 准备轨迹数据
+corr_traj = [];
+opt_traj = [];
+if exist('raw_corr_traj', 'var')
+    corr_traj = raw_corr_traj;
+end
+if exist('raw_opt_traj', 'var')
+    opt_traj = raw_opt_traj;
+end
+
+% 调用合并后的plotTrajectories函数
+plotTrajectories(ax, raw_gt_traj, corr_traj, opt_traj, cfg, 'raw');
+
+all_figures(end+1) = fig_raw;
+figure_names{end+1} = 'trajectories_raw';
+
 % 为每个轨迹生成可视化
 for i = 1:length(trajectory_results)
     result = trajectory_results{i};
@@ -119,7 +142,7 @@ for i = 1:length(trajectory_results)
     % 4.1 轨迹对比图
     fig_traj = figure('Name', sprintf('Trajectory Comparison - %s', traj_name));
     plotTrajectories(gca, result.gt_associated_traj, result.aligned_est_traj, cfg);
-    title(sprintf('Trajectory Comparison - %s (2D Top-Down View)', traj_name));
+    % 不设置标题
     
     all_figures(end+1) = fig_traj;
     figure_names{end+1} = sprintf('trajectory_comparison_%s', traj_name);
@@ -127,20 +150,12 @@ for i = 1:length(trajectory_results)
     % 4.2 ATE 分析图
     [fig_ate_timeseries, fig_ate_hist, fig_ate_cdf] = plotATE(result.ate_metrics, cfg);
     
-    % 更新ATE图的标题以包含轨迹名称
-    figure(fig_ate_timeseries); 
-    sgtitle(sprintf('ATE vs. Time - %s', traj_name));
-    
-    figure(fig_ate_hist);
-    sgtitle(sprintf('ATE Histogram - %s', traj_name));
-    
-    figure(fig_ate_cdf);
-    sgtitle(sprintf('ATE CDF - %s', traj_name));
+    % 不设置总标题
     
     all_figures(end+1:end+3) = [fig_ate_timeseries, fig_ate_hist, fig_ate_cdf];
-    figure_names{end+1:end+3} = {sprintf('ate_timeseries_%s', traj_name), ...
-                                 sprintf('ate_histogram_%s', traj_name), ...
-                                 sprintf('ate_cdf_%s', traj_name)};
+    figure_names{end+1} = sprintf('ate_timeseries_%s', traj_name);
+    figure_names{end+1} = sprintf('ate_histogram_%s', traj_name);
+    figure_names{end+1} = sprintf('ate_cdf_%s', traj_name);
 end
 
 %% --- 5. 保存数据文件 ---
@@ -159,29 +174,36 @@ if cfg.SAVE_DATA
     fprintf('数据文件保存完成。\n');
 end
 
-%% --- 6. 应用统一配置并保存图像 ---
-if cfg.SAVE_FIGURES
-    fprintf('正在应用配置并保存图像...\n');
+%% --- 6. 应用图像格式配置 ---
+fprintf('正在应用图像格式配置...\n');
+for i = 1:length(all_figures)
+    fig = all_figures(i);
+    
+    % 设置字体
+    set(findall(fig, '-property', 'FontSize'), 'FontSize', cfg.FONT_SIZE_BASE * cfg.FONT_SIZE_MULTIPLE);
+    
+    % 设置尺寸和位置（从左下角开始）
+    set(fig, 'Units', 'centimeters');
+    pos = get(fig, 'Position');
+    pos(1) = 2;  % X位置：距离屏幕左边2cm
+    pos(2) = 2;  % Y位置：距离屏幕底边2cm
+    pos(3) = cfg.FIGURE_WIDTH_CM * cfg.FIGURE_SIZE_MULTIPLE;
+    pos(4) = cfg.FIGURE_HEIGHT_CM * cfg.FIGURE_SIZE_MULTIPLE;
+    set(fig, 'Position', pos);
+end
+fprintf('图像格式配置完成。\n');
 
+%% --- 7. 保存图像（可选）---
+if cfg.SAVE_FIGURES
+    fprintf('正在保存图像...\n');
     for i = 1:length(all_figures)
         fig = all_figures(i);
-        
-        % 设置字体
-        set(findall(fig, '-property', 'FontSize'), 'FontSize', cfg.FONT_SIZE_BASE * cfg.FONT_SIZE_MULTIPLE);
-        
-        % 设置尺寸
-        fig.Units = 'centimeters';
-        fig.Position(3) = cfg.FIGURE_WIDTH_CM * cfg.FIGURE_SIZE_MULTIPLE;
-        fig.Position(4) = cfg.FIGURE_HEIGHT_CM * cfg.FIGURE_SIZE_MULTIPLE;
-        
-        % 保存图像
         file_name = fullfile(RESULTS_DIR_TIMESTAMPED, [figure_names{i}, '.png']);
         print(fig, file_name, '-dpng', ['-r', num2str(cfg.DPI)]);
     end
-    
     fprintf('所有图像已保存到 %s 文件夹。\n', RESULTS_DIR_TIMESTAMPED);
 else
-    fprintf('图像仅作显示，未保存。\n'); %#ok<*UNRCH>
+    fprintf('图像仅作显示，未保存。\n');
 end
 
 %% --- 7. 输出统计总结 ---

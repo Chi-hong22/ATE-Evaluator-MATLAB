@@ -15,7 +15,7 @@ function [fig_timeseries, fig_histogram, fig_cdf] = plotATE(ate_metrics, cfg)
         cfg = config();
     end
 
-    % --- 准备通用标题 ---
+    % --- 准备通用统计文本（不用于标题，仅保留以备扩展） ---
     stats_text = sprintf('RMSE: %.4f, Mean: %.4f, Median: %.4f, Std: %.4f (m)', ...
                          ate_metrics.rmse, ate_metrics.mean, ...
                          ate_metrics.median, ate_metrics.std);
@@ -26,7 +26,7 @@ function [fig_timeseries, fig_histogram, fig_cdf] = plotATE(ate_metrics, cfg)
     grid on;
     xlabel('Frame Index');
     ylabel('ATE (m)');
-    title({'ATE vs. Time', stats_text});
+    % 不设置标题
     
     % --- 2. 创建 ATE 直方图 ---
     fig_histogram = figure('Name', 'ATE Histogram');
@@ -34,14 +34,16 @@ function [fig_timeseries, fig_histogram, fig_cdf] = plotATE(ate_metrics, cfg)
     grid on;
     xlabel('ATE (m)');
     ylabel('Frequency');
-    title({'ATE Histogram', stats_text});
+    % 不设置标题
     
     % --- 3. 创建 ATE 累积分布函数 (CDF) ---
     fig_cdf = figure('Name', 'ATE CDF');
     cdfplot(ate_metrics.errors);
+    % 清除cdfplot自动添加的标题
+    title('');
     grid on;
     xlabel('ATE (m)');
     ylabel('Cumulative Probability');
-    title({'ATE Cumulative Distribution', stats_text});
+    % 不设置标题
     
 end
