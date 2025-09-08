@@ -53,7 +53,7 @@ function [timestamps, trajectory] = readTrajectory(file_path)
             
         case 8
             % 格式: [timestamp/pose_id, x, y, z, qx, qy, qz, qw] - 完整位姿
-            fprintf('检测到8列格式: [pose_id, x, y, z, qx, qy, qz, qw] - 完整位姿数据（忽略旋转）\n');
+            fprintf('检测到8列格式: [timestamp/pose_id, x, y, z, qx, qy, qz, qw] - 完整位姿数据（忽略旋转）\n');
             timestamps = data(:, 1);
             trajectory = data(:, 2:4);
             

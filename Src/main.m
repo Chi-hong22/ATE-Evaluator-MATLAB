@@ -141,7 +141,7 @@ for i = 1:length(trajectory_results)
     
     % 4.1 轨迹对比图
     fig_traj = figure('Name', sprintf('Trajectory Comparison - %s', traj_name));
-    plotTrajectories(gca, result.gt_associated_traj, result.aligned_est_traj, cfg);
+    plotTrajectories(gca, result.gt_associated_traj, result.aligned_est_traj, cfg, 'aligned');
     % 不设置标题
     
     all_figures(end+1) = fig_traj;

@@ -8,7 +8,8 @@ function cfg = config()
     
     %% === 输入文件配置 ===
     % 输入文件夹路径 (请修改为您的数据文件夹)
-    cfg.INPUT_FOLDER = 'Data\250828_NESP_noINS_seed40_yaw_0.05_0.005rad';
+    % cfg.INPUT_FOLDER = 'Data\250828_NESP_noINS_seed40_yaw_0.05_0.005rad';
+    cfg.INPUT_FOLDER = 'Data\250905_noNESP_noINS_seed40_yaw_0.05_0.005rad';
     
     % 标准文件名
     cfg.GT_FILE_NAME = 'poses_original.txt';        % 真值轨迹文件名
@@ -38,10 +39,27 @@ function cfg = config()
     cfg.INTERPOLATION_METHOD = 'linear';  % 插值方法: 'linear', 'cubic', etc.
     
     %% === 可视化参数配置 ===
-    cfg.TRAJECTORY_LINE_WIDTH = 1.5;     % 轨迹线宽
-    cfg.GT_COLOR = 'b';                   % 真值轨迹颜色
-    cfg.EST_COLOR = 'r';                  % 估计轨迹颜色
-    cfg.EST_LINE_STYLE = '--';            % 估计轨迹线型
+    % Ground Truth 样式
+    cfg.GT_COLOR = [25, 158, 34]/255;     % 绿色rgb(25, 158, 34)
+    cfg.GT_LINE_STYLE = '-';              % 实线
+    cfg.GT_LINE_WIDTH = 3;                % 线宽
+    
+    % Corrupted 样式  
+    cfg.CORRUPTED_COLOR = [255, 66, 37]/255;  % 红色rgb(255, 66, 37)
+    cfg.CORRUPTED_LINE_STYLE = '-';           % 实线
+    cfg.CORRUPTED_LINE_WIDTH = 3;             % 线宽
+    
+    % Optimized 样式
+    cfg.OPTIMIZED_COLOR = [58, 104, 231]/255; % 蓝色rgb(58, 104, 231)
+    cfg.OPTIMIZED_LINE_STYLE = '-';           % 实线
+    cfg.OPTIMIZED_LINE_WIDTH = 3;             % 线宽
+    
+    % Aligned模式估计轨迹样式（保持向后兼容）
+    cfg.EST_COLOR = [255, 66, 37]/255;    % 估计轨迹颜色（红色，与corrupted一致）
+    cfg.EST_LINE_STYLE = '-';             % 估计轨迹线型
+    cfg.TRAJECTORY_LINE_WIDTH = 3;        % 轨迹线宽（统一线宽）
+    
+    % 其他可视化参数
     cfg.ATE_HISTOGRAM_BINS = 50;          % ATE直方图的bins数量
 
 end
