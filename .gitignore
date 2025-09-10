@@ -1,6 +1,5 @@
 # Ignore AI instructions.md file
-Docs\instructions.md
-
+Docs\todo\
 # Ignore all contents of the Data directory
 /Data/*
 

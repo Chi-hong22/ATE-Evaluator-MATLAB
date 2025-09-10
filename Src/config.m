@@ -8,8 +8,8 @@ function cfg = config()
     
     %% === 输入文件配置 ===
     % 输入文件夹路径 (请修改为您的数据文件夹)
-    % cfg.INPUT_FOLDER = 'Data\250828_NESP_noINS_seed40_yaw_0.05_0.005rad';
-    cfg.INPUT_FOLDER = 'Data\250905_noNESP_noINS_seed40_yaw_0.05_0.005rad';
+    cfg.INPUT_FOLDER = 'Data\250828_NESP_noINS_seed40_yaw_0.05_0.005rad';
+    % cfg.INPUT_FOLDER = 'Data\250905_noNESP_noINS_seed40_yaw_0.05_0.005rad';
     
     % 标准文件名
     cfg.GT_FILE_NAME = 'poses_original.txt';        % 真值轨迹文件名
@@ -17,8 +17,8 @@ function cfg = config()
     cfg.EST_OPTIMIZED_FILE_NAME = 'poses_optimized.txt';  % 估计轨迹文件名2
     
     %% === 输出控制开关 ===
-    cfg.SAVE_FIGURES = false;  % 设置为 false 则只显示图像，不保存
-    cfg.SAVE_DATA = false;     % 设置为 false 则不保存数据文件
+    cfg.SAVE_FIGURES = true;  % 设置为 false 则只显示图像，不保存
+    cfg.SAVE_DATA = true;     % 设置为 false 则不保存数据文件
     
     %% === 结果保存配置 ===
     cfg.RESULTS_DIR_BASE = 'Results';  % 结果保存的基础目录

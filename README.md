@@ -32,6 +32,8 @@
 │   ├── alignAndComputeATE.m        # 核心对齐与ATE计算函数
 │   ├── plotTrajectories.m          # 轨迹可视化函数
 │   ├── plotATE.m                   # ATE分析可视化函数
+│   ├── plotErrorDistributions.m    # (新增) 多组ATE分布可视化函数
+│   ├── plotBoxViolin_main.m        # (新增) 分布可视化入口脚本
 │   └── saveTrajectoryData.m        # 数据保存函数
 └── README.md                       # 项目介绍与使用说明
 ```
@@ -107,6 +109,8 @@ end
   > 显示了不同误差大小的频率分布。一个理想的结果是大部分误差集中在接近零的区域，图形呈“右偏”或“尖峰”状。
 - `ate_cdf_[name].png`: ATE累积分布函数图。
   > 展示了误差小于特定值的点的百分比。例如，可以从图中快速读出“90%的点的误差都小于X米”，这对于评估算法的整体稳定性和可靠性非常有用。
+- `error_boxplot.png` & `error_violin.png`: **(新增)** 多组ATE误差分布对比图。
+  > 用于横向比较不同算法或参数下的ATE分布情况，箱线图关注统计摘要，小提琴图关注数据密度。
 
 ### 5.2 数据文件
 - **JSON指标摘要** (`ate_metrics_[name].json`): 包含RMSE、均值、中位数、标准差、最大值、最小值以及各分位数统计
@@ -145,13 +149,15 @@ end
 -   `alignAndComputeATE.m`: **核心计算函数**。执行时间关联、SE(3)对齐和ATE计算。
 -   `plotTrajectories.m`: **轨迹绘图函数**。生成2D俯视图的轨迹对比。
 -   `plotATE.m`: **ATE分析函数**。生成三个独立的ATE分析图窗。
+-   `plotErrorDistributions.m`: **(新增) 多组ATE分布图函数**。用于生成箱线图和小提琴图。
+-   `plotBoxViolin_main.m`: **(新增) 分布图入口脚本**。用于快速、交互式地生成多组ATE对比图。
 -   `saveTrajectoryData.m`: **数据保存函数**。保存JSON、CSV、TXT和MAT格式的分析结果。
 
 ## 7. 关键文档
 
 - [核心算法逻辑详解](./Docs/algorithm_details.md)
 - [ATE概念详解](./Docs/ate_introduction.md)
-- [开发待办清单](./Docs/todolist.md)
+- [多组ATE分布可视化（箱线图/小提琴图）](./Docs/plot_distributions.md)
 
 ### 7.1 时间关联
 程序自动找到真值轨迹和估计轨迹的时间重叠区间，并使用线性插值将估计轨迹的数据点对齐到真值轨迹的时间戳上。
