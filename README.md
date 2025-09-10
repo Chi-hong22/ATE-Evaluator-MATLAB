@@ -33,7 +33,7 @@
 │   ├── plotTrajectories.m          # 轨迹可视化函数
 │   ├── plotATE.m                   # ATE分析可视化函数
 │   ├── plotErrorDistributions.m    # (新增) 多组ATE分布可视化函数
-│   ├── plotBoxViolin_main.m        # (新增) 分布可视化入口脚本
+│   ├── main_plotBoxViolin.m        # (新增) 分布可视化入口脚本
 │   └── saveTrajectoryData.m        # 数据保存函数
 └── README.md                       # 项目介绍与使用说明
 ```
@@ -150,7 +150,7 @@ end
 -   `plotTrajectories.m`: **轨迹绘图函数**。生成2D俯视图的轨迹对比。
 -   `plotATE.m`: **ATE分析函数**。生成三个独立的ATE分析图窗。
 -   `plotErrorDistributions.m`: **(新增) 多组ATE分布图函数**。用于生成箱线图和小提琴图。
--   `plotBoxViolin_main.m`: **(新增) 分布图入口脚本**。用于快速、交互式地生成多组ATE对比图。
+-   `main_plotBoxViolin.m`: **(新增) 分布图入口脚本**。用于快速、交互式地生成多组ATE对比图。
 -   `saveTrajectoryData.m`: **数据保存函数**。保存JSON、CSV、TXT和MAT格式的分析结果。
 
 ## 7. 关键文档

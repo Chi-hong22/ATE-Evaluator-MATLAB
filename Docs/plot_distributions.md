@@ -12,18 +12,18 @@
 -   **箱线图 (Box Plot)**: 直观展示数据的中位数、四分位数、异常值等统计特性。
 -   **小提琴/花瓶图 (Violin Plot)**: 结合了箱线图与核密度估计，能更清晰地显示数据的分布形态。
 
-该函数与项目中的 `config.m` 无缝集成，自动应用统一的字体、分辨率和尺寸配置，确保图表风格的一致性。同时，它也支持丰富的自定义参数，如颜色、标签等，并通过入口脚本 `plotBoxViolin_main.m` 实现了交互式和脚本化两种调用方式。
+该函数与项目中的 `config.m` 无缝集成，自动应用统一的字体、分辨率和尺寸配置，确保图表风格的一致性。同时，它也支持丰富的自定义参数，如颜色、标签等，并通过入口脚本 `main_plotBoxViolin.m` 实现了交互式和脚本化两种调用方式。
 
 ## 2. 如何使用
 
 ### 2.1 交互式运行 (推荐)
 
-最简单的方式是直接运行入口脚本 `plotBoxViolin_main.m`。
+最简单的方式是直接运行入口脚本 `main_plotBoxViolin.m`。
 
 1.  在MATLAB中打开项目。
 2.  在命令行窗口输入并运行：
     ```matlab
-    plotBoxViolin_main
+    main_plotBoxViolin
     ```
 3.  程序将自动：
     -   弹出一个文件选择窗口，允许你**多选**一个或多个ATE数据文件。
@@ -33,10 +33,10 @@
 
 ### 2.2 脚本化运行
 
-如果你需要重复运行或进行自动化测试，可以直接编辑 `plotBoxViolin_main.m` 脚本，在顶部的“用户配置区”预先定义好文件路径和标签。
+如果你需要重复运行或进行自动化测试，可以直接编辑 `main_plotBoxViolin.m` 脚本，在顶部的“用户配置区”预先定义好文件路径和标签。
 
 ```matlab
-% --- 编辑 Src/plotBoxViolin_main.m ---
+% --- 编辑 Src/main_plotBoxViolin.m ---
 ...
 files_to_plot   = {
     'Data\poses_corrupted_ate.csv', ...
@@ -46,7 +46,7 @@ labels_for_plot = {'Before Optimization', 'After Optimization'};
 ...
 ```
 
-修改保存后，直接运行 `plotBoxViolin_main` 即可生成对应的图表，无需任何手动操作。
+修改保存后，直接运行 `main_plotBoxViolin` 即可生成对应的图表，无需任何手动操作。
 
 ### 2.3 终端命令行调用
 
@@ -54,7 +54,7 @@ labels_for_plot = {'Before Optimization', 'After Optimization'};
 
 ```powershell
 # 方式一: 运行入口脚本 (交互式)
-matlab -batch "run('Src/plotBoxViolin_main.m')"
+matlab -batch "run('Src/main_plotBoxViolin.m')"
 
 # 方式二: 直接调用核心函数 (非交互式, 需提供完整参数)
 matlab -batch "plotErrorDistributions('files',{'Data/ate_A.csv'}, 'labels',{'Group A'}, 'save',true)"

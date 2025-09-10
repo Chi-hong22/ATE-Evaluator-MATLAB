@@ -1,5 +1,5 @@
-function plotBoxViolin_main()
-% plotBoxViolin_main - 入口脚本,用于终端调用或直接运行
+function main_plotBoxViolin()
+% main_plotBoxViolin - 入口脚本,用于终端调用或直接运行
 %
 % 该脚本会自动加载配置,并调用 plotErrorDistributions 函数.
 % 用户可以在此脚本中预定义文件和标签,否则将以交互方式选择.
@@ -16,10 +16,14 @@ function plotBoxViolin_main()
     % };
     % labels_for_plot = {'Method A', 'Method B'};
     % =========================================================================
-    
+    clear; clc;
+
+    fprintf('=== ATE 统计数据对比绘制 ===\n');
+    fprintf('开始时间: %s\n\n', datestr(now, 'yyyy-mm-dd HH:MM:SS'));
+
     files_to_plot   =   {'Results\250828_NESP_noINS_seed40_yaw_0.05_0.005rad\ate_details_optimized.csv',...
 'Results\250905_noNESP_noINS_seed40_yaw_0.05_0.005rad\ate_details_optimized.csv'}; % <--- 在这里填入文件路径 (相对或绝对)
-    labels_for_plot = {'NESP','noNESP'}; % <--- 在这里填入对应的标签
+    labels_for_plot = {'NESP','Comb'}; % <--- 在这里填入对应的标签
 
     % 确保 Src 目录在路径中
     if isempty(strfind(path, 'Src'))

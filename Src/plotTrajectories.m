@@ -194,7 +194,7 @@ function plotTrajectories(ax, gt_traj, varargin)
     box(ax, 'on');     % 显示坐标轴边框
     
     % 设置坐标轴可见性
-    set(ax, 'Visible', 'off');  % 隐藏坐标轴刻度和标签
+    set(ax, 'Visible', 'on');  % 隐藏坐标轴刻度和标签
 
     % 添加坐标轴标签
     xlabel(ax, 'X (m)');
