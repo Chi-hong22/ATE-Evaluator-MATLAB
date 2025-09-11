@@ -134,7 +134,7 @@ function fig_handle = plotAPEComparison(varargin)
     fig_handle = figure('Name', 'XY Planar APE Comparison', 'NumberTitle', 'off');
     
     % 设置图窗尺寸
-    fig_width = cfg.FIGURE_WIDTH_CM * cfg.FIGURE_SIZE_MULTIPLE;
+    fig_width = cfg.FIGURE_WIDTH_CM * cfg.FIGURE_SIZE_MULTIPLE * 2;
     fig_height = cfg.FIGURE_HEIGHT_CM * cfg.FIGURE_SIZE_MULTIPLE;
     set(fig_handle, 'Units', 'centimeters');
     set(fig_handle, 'Position', [2, 2, fig_width, fig_height]);
@@ -170,9 +170,9 @@ function fig_handle = plotAPEComparison(varargin)
     set(ax, 'FontName', 'Times New Roman');
     
     % 轴标签与标题
-    xlabel('Time (s)', 'FontSize', font_axis, 'FontName', 'Times New Roman');
+    xlabel('Keyframe Index', 'FontSize', font_axis, 'FontName', 'Times New Roman');
     ylabel('Absolute Position Error (m)', 'FontSize', font_axis, 'FontName', 'Times New Roman');
-    title('Comparison of Absolute Position Error over Time', 'FontSize', font_title, 'FontName', 'Times New Roman');
+    title('Position Error Evolution across Submaps', 'FontSize', font_title, 'FontName', 'Times New Roman');
     
     % 图例
     legend('show', 'Location', 'best', 'FontSize', font_axis, 'FontName', 'Times New Roman');
@@ -186,7 +186,7 @@ function fig_handle = plotAPEComparison(varargin)
         % 确定输出目录
         if isempty(output_dir)
             timestamp = datestr(now, 'yyyymmdd_HHMMSS');
-            output_dir = fullfile(cfg.RESULTS_DIR_BASE, [timestamp '_APE_error']);
+            output_dir = fullfile(cfg.RESULTS_DIR_BASE, [timestamp '_APE_visualization']);
         end
         
         % 创建输出目录

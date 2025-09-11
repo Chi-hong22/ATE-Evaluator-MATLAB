@@ -18,14 +18,22 @@ fprintf('开始时间: %s\n\n', datestr(now, 'yyyy-mm-dd HH:MM:SS'));
 % 请根据您的实际数据文件修改以下路径
 
 % NESP 路径文件（示例路径，请修改为实际路径）
-nesp_slam_path = 'Data\250828_NESP_noINS_seed40_yaw_0.05_0.005rad\poses_optimized.txt';
+nesp_slam_path = 'Data/250828_NESP_noINS_seed40_yaw_0.05_0.005rad/poses_optimized.txt';
 nesp_gt_path   = 'Data/250828_NESP_noINS_seed40_yaw_0.05_0.005rad/poses_original.txt';
 
 % Comb 路径文件（示例路径，请修改为实际路径）
+
 % comb_slam_path = 'Data/250905_noNESP_noINS_seed40_yaw_0.05_0.005rad/poses_optimized.txt';
 % comb_gt_path   = 'Data/250905_noNESP_noINS_seed40_yaw_0.05_0.005rad/poses_original.txt';
-comb_slam_path = 'Data/250828_noNESP_noINS_seed40_yaw_0.05_0.005rad/poses_optimized.txt';
-comb_gt_path   = 'Data/250828_noNESP_noINS_seed40_yaw_0.05_0.005rad/poses_original.txt';
+
+% comb_slam_path = 'Data/250828_noNESP_noINS_seed40_yaw_0.05_0.005rad/poses_optimized.txt';
+% comb_gt_path   = 'Data/250828_noNESP_noINS_seed40_yaw_0.05_0.005rad/poses_original.txt';
+
+comb_slam_path = 'Data/250911_Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.5/poses_optimized.txt';
+comb_gt_path   = 'Data/250911_Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.5/poses_original.txt';
+
+% comb_slam_path = 'Data/250911_Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.6/poses_optimized.txt';
+% comb_gt_path   = 'Data/250911_Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.6/poses_original.txt';
 %% === 检查文件是否存在 ===
 files_to_check = {nesp_slam_path, nesp_gt_path, comb_slam_path, comb_gt_path};
 file_labels = {'NESP SLAM', 'NESP GT', 'Comb SLAM', 'Comb GT'};

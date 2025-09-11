@@ -15,163 +15,136 @@
 │   ├── poses_corrupted.txt         # (可选) 估计轨迹数据1
 │   └── poses_optimized.txt         # (可选) 估计轨迹数据2
 ├── Docs/                           # 存放项目文档
-│   └── todolist.md                 # 开发计划与功能清单
+│   ├── main.md                     # main.m 模块文档
+│   ├── main_plotAPE.md             # main_plotAPE.m 模块文档
+│   ├── main_plotBoxViolin.md       # main_plotBoxViolin.m 模块文档
+│   ├── ate_introduction.md         # ATE概念详解
+│   └── algorithm_details.md        # 核心算法逻辑详解
 ├── Results/                        # 存放所有输出的结果
-│   └── 2025-09-08_10-50/           # (示例) 带时间戳的结果文件夹
-│       ├── trajectory_comparison_corrupted.png
-│       ├── ate_timeseries_corrupted.png
-│       ├── ate_metrics_corrupted.json
-│       ├── ate_details_corrupted.csv
-│       ├── aligned_trajectory_corrupted.txt
-│       ├── aligned_trajectory_corrupted.mat
-│       └── ...                     # 其他结果文件
+│   └── ...                         # (示例) 带时间戳的结果文件夹
 ├── Src/                            # 存放所有 MATLAB 源代码 (.m)
 │   ├── config.m                  # 配置文件
-│   ├── main.m          # 主程序脚本
-│   ├── readTrajectory.m            # 数据读取函数
-│   ├── alignAndComputeATE.m        # 核心对齐与ATE计算函数
-│   ├── plotTrajectories.m          # 轨迹可视化函数
-│   ├── plotATE.m                   # ATE分析可视化函数
-│   ├── plotErrorDistributions.m    # (新增) 多组ATE分布可视化函数
-│   ├── main_plotBoxViolin.m        # (新增) 分布可视化入口脚本
-│   └── saveTrajectoryData.m        # 数据保存函数
+│   ├── main.m                    # 主程序脚本
+│   ├── main_plotAPE.m              # APE对比绘图入口脚本
+│   ├── main_plotBoxViolin.m        # ATE分布对比入口脚本
+│   └── ...                       # 其他核心函数
 └── README.md                       # 项目介绍与使用说明
 ```
 
 ## 3. 数据格式要求
 
-### 输入文件格式
-所有轨迹文件应为 `.txt` 格式，包含 **4列数据**，以空格分隔：
+所有轨迹文件应为 `.txt` 格式，包含 **4列数据**，以空格分隔：`timestamp/pose_id x y z`。
 
-```
-timestamp/pose_id x y z
-0.000000 1.234567 2.345678 3.456789
-0.100000 1.244567 2.355678 3.466789
-...
-```
+-   `poses_original.txt`: **真值轨迹**（必须存在）
+-   `poses_corrupted.txt`: **估计轨迹1**（可选，通常为优化前）
+-   `poses_optimized.txt`: **估计轨迹2**（可选，通常为优化后）
 
-### 文件命名规范
-- `poses_original.txt`: **真值轨迹**（必须存在）
-- `poses_corrupted.txt`: **估计轨迹1**（可选，通常为优化前）
-- `poses_optimized.txt`: **估计轨迹2**（可选，通常为优化后）
+## 4. 核心模块与使用方法
 
-程序会自动检测存在的文件并进行相应的分析。如果两个估计轨迹文件都存在，将分别进行ATE计算和对比。
+本项目包含三个主要的执行入口脚本，分别用于不同的分析任务。
 
-## 4. 如何使用
+### 4.1 `main.m` - 核心ATE分析模块
 
-### 步骤 1: 准备数据
+这是项目最核心、功能最全面的脚本，用于对单个或多个估计轨迹进行完整的ATE（绝对轨迹误差）分析。它会自动处理数据加载、时间对齐、空间对齐、误差计算、多维度可视化和结果保存的全过程。
 
-1. 将你的轨迹数据文件按照上述格式和命名规范放入一个文件夹中。
-2. 确保至少有 `poses_original.txt`（真值）和一个估计轨迹文件。
-3. 确保所有轨迹的时间戳有合理的重叠范围。
+**输入:**
+-   **轨迹文件**: 位于 `config.m` 中 `INPUT_FOLDER` 指定的目录下，包含真值及估计轨迹。
+-   **配置文件**: `Src/config.m` 中定义的所有参数。
 
-### 步骤 2: 修改配置
+**输出:**
+-   **结果文件夹**: 在 `Results/` 目录下创建一个以时间戳命名的文件夹，包含所有输出。
+-   **命令行报告**: 在MATLAB终端输出ATE的核心统计指标总结。
+-   **详细输出说明**:
+    -   **可视化图表 (PNG)**:
+        -   `trajectories_raw.png`: 所有原始轨迹在对齐前的对比图。
+        -   `trajectory_comparison_[name].png`: 2D俯视图轨迹对比，直观展示对齐后估计轨迹与真值轨迹的吻合程度。
+        -   `ate_timeseries_[name].png`: ATE随时间变化图，用于识别误差主要发生在轨迹的哪个部分。
+        -   `ate_histogram_[name].png`: ATE误差分布直方图，显示不同误差大小的频率分布。
+        -   `ate_cdf_[name].png`: ATE累积分布函数图，展示误差小于特定值的点的百分比。
+    -   **数据文件**:
+        -   `ate_metrics_[name].json`: 包含RMSE、均值、中位数、标准差等核心统计指标。
+        -   `ate_details_[name].csv`: 包含每个时间点的ATE误差值。
+        -   `aligned_trajectory_[name].txt`/`.mat`: 包含真值、原始估计和对齐后轨迹的完整数据。
 
-所有参数配置都已集中到 `Src/config.m` 文件中，方便统一管理。打开该文件进行修改：
+**使用流程:**
+1.  **配置数据**: 打开 `Src/config.m`，设置 `INPUT_FOLDER` 以及轨迹文件名。
+2.  **运行脚本**: 在MATLAB中直接运行 `Src/main.m`。
 
-```matlab
-function cfg = config()
-    % ...
-    
-    %% === 输入文件配置 ===
-    cfg.INPUT_FOLDER = 'Data';
-    
-    % ... (其他文件名)
-    
-    %% === 输出控制开关 ===
-    cfg.SAVE_FIGURES = true;
-    cfg.SAVE_DATA = true;
-    
-    % ... (其他绘图和算法参数)
-end
-```
+> **详细说明请参阅**: **[./Docs/main.md](./Docs/main.md)**
 
-你可以在此文件中轻松修改输入文件夹、控制是否保存文件、调整绘图样式（如颜色、线宽）和算法参数。
+### 4.2 `main_plotAPE.m` - APE对比模块
 
-### 步骤 3: 运行分析
+该脚本专门用于对比两种不同方法在XY平面上的APE（绝对位姿误差），生成对比误差曲线图。
 
-直接在 MATLAB 中运行 `Src/main.m` 脚本。**你不再需要修改主脚本的任何内容。**
+**输入:**
+-   **轨迹文件**: 在 `Src/main_plotAPE.m` 脚本内部直接指定的四条轨迹文件路径（两组SLAM与GT）。
 
-程序将自动：
-- 检测输入文件夹中的轨迹文件
-- 对每个估计轨迹计算ATE
-- 生成可视化结果
-- 保存详细的分析数据
+**输出:**
+-   **可视化图表**: 在 `Results/` 目录下创建一个带时间戳的文件夹，并保存一张名为 `APE_error.png` 的对比图。
 
-## 5. 输出结果说明
+**使用流程:**
+1.  **配置数据**: 打开 `Src/main_plotAPE.m`，在脚本内部修改两组轨迹的文件路径。
+2.  **运行脚本**: 在MATLAB中运行 `Src/main_plotAPE.m`。
 
-### 5.1 可视化结果（PNG图像）
-- `trajectory_comparison_[name].png`: 2D俯视图轨迹对比。
-  > 直观展示对齐后的估计轨迹与真值轨迹的吻合程度。两条线越接近，说明整体轨迹精度越高。
-- `ate_timeseries_[name].png`: ATE随时间变化图。
-  > 展示了每个时间点（或帧）的绝对轨迹误差。通过此图可以识别误差主要发生在轨迹的哪个部分，例如在快速转弯或长时间直线行驶时。
-- `ate_histogram_[name].png`: ATE误差分布直方图。
-  > 显示了不同误差大小的频率分布。一个理想的结果是大部分误差集中在接近零的区域，图形呈“右偏”或“尖峰”状。
-- `ate_cdf_[name].png`: ATE累积分布函数图。
-  > 展示了误差小于特定值的点的百分比。例如，可以从图中快速读出“90%的点的误差都小于X米”，这对于评估算法的整体稳定性和可靠性非常有用。
-- `error_boxplot.png` & `error_violin.png`: **(新增)** 多组ATE误差分布对比图。
-  > 用于横向比较不同算法或参数下的ATE分布情况，箱线图关注统计摘要，小提琴图关注数据密度。
-
-### 5.2 数据文件
-- **JSON指标摘要** (`ate_metrics_[name].json`): 包含RMSE、均值、中位数、标准差、最大值、最小值以及各分位数统计
-- **CSV详细数据** (`ate_details_[name].csv`): 包含每个时间点的ATE误差值
-- **TXT轨迹数据** (`aligned_trajectory_[name].txt`): 包含真值、原始估计和对齐后轨迹的完整数据
-- **MAT轨迹数据** (`aligned_trajectory_[name].mat`): MATLAB格式的完整轨迹数据，便于后续分析
-
-### 5.3 JSON指标摘要示例
-```json
-{
-  "timestamp/pose_id": "2025-09-08 10:30:00",
-  "alignment_type": "SE3",
-  "num_poses": 1000,
-  "metrics": {
-    "rmse": 0.1234,
-    "mean": 0.1100,
-    "median": 0.0987,
-    "std": 0.0543,
-    "max": 0.4567,
-    "min": 0.0012
-  },
-  "statistics": {
-    "percentile_25": 0.0654,
-    "percentile_75": 0.1543,
-    "percentile_95": 0.2876,
-    "percentile_99": 0.3987
-  }
-}
+**终端调用:**
+核心函数 `plotAPEComparison` 支持参数化调用，方便集成到自动化脚本中。
+```powershell
+# 示例:
+matlab -batch "addpath(genpath('Src')); plotAPEComparison('nespSLAM','Data/nesp.txt', 'nespGT','Data/gt.txt', 'combSLAM','Data/comb.txt', 'combGT','Data/gt2.txt', 'save',true)"
 ```
 
-## 6. 函数说明
+> **详细说明请参阅**: **[./Docs/main_plotAPE.md](./Docs/main_plotAPE.md)**
 
--   `config.m`: **配置文件**。集中管理所有用户可调参数，如文件路径、保存开关、绘图样式等。
--   `main.m`: **主程序脚本**。负责整个分析流程，从配置文件加载参数，然后执行文件检测、数据加载、ATE计算、可视化和结果保存。
--   `readTrajectory.m`: **数据读取函数**。从4列格式的轨迹文件中读取时间戳和3D坐标。
--   `alignAndComputeATE.m`: **核心计算函数**。执行时间关联、SE(3)对齐和ATE计算。
--   `plotTrajectories.m`: **轨迹绘图函数**。生成2D俯视图的轨迹对比。
--   `plotATE.m`: **ATE分析函数**。生成三个独立的ATE分析图窗。
--   `plotErrorDistributions.m`: **(新增) 多组ATE分布图函数**。用于生成箱线图和小提琴图。
--   `main_plotBoxViolin.m`: **(新增) 分布图入口脚本**。用于快速、交互式地生成多组ATE对比图。
--   `saveTrajectoryData.m`: **数据保存函数**。保存JSON、CSV、TXT和MAT格式的分析结果。
+### 4.3 `main_plotBoxViolin.m` - ATE分布对比模块
 
-## 7. 关键文档
+此脚本用于对多份ATE分析结果（通常是 `.csv` 文件）进行横向比较，通过箱形图和小提琴图直观地展示各组数据的统计分布特性。
 
-- [核心算法逻辑详解](./Docs/algorithm_details.md)
-- [ATE概念详解](./Docs/ate_introduction.md)
-- [多组ATE分布可视化（箱线图/小提琴图）](./Docs/plot_distributions.md)
+**输入:**
+-   **ATE数据文件**: 在 `Src/main_plotBoxViolin.m` 脚本内部 `files_to_plot` 中指定的一个或多个 `.csv` 文件路径。
 
-### 7.1 时间关联
-程序自动找到真值轨迹和估计轨迹的时间重叠区间，并使用线性插值将估计轨迹的数据点对齐到真值轨迹的时间戳上。
+**输出:**
+-   **可视化图表**: 在 `Results/` 目录下创建一个带时间戳的文件夹，并保存 `_ATE_error_boxplot.png` 和 `_ATE_error_violin.png` 两张对比图。
 
-### 7.2 空间对齐
-使用Horn方法（基于SVD分解）计算最优的SE(3)变换（旋转+平移），将估计轨迹对齐到真值轨迹的坐标系中。
+**使用流程:**
+1.  **配置数据**: 打开 `Src/main_plotBoxViolin.m`，在脚本内部填入ATE误差数据文件的路径和对应的标签。
+2.  **运行脚本**: 在MATLAB中运行 `Src/main_plotBoxViolin.m`。
 
-### 7.3 ATE计算
-计算对齐后估计轨迹与真值轨迹之间的欧几里得距离，并统计各种误差指标。
+**终端调用:**
+核心函数 `plotATEDistributions` 同样支持参数化调用。
+```powershell
+# 示例:
+matlab -batch "addpath(genpath('Src')); plotATEDistributions('files',{'Results/file1.csv','Results/file2.csv'}, 'labels',{'Method A','Method B'}, 'save',true)"
+```
 
-## 8. 注意事项
+> **详细说明请参阅**: **[./Docs/main_plotBoxViolin.md](./Docs/main_plotBoxViolin.md)**
 
+## 5. 函数与算法说明
+
+### 5.1 主要函数说明
+-   `config.m`: **配置文件**。集中管理所有用户可调参数。
+-   `main.m`: **核心ATE分析入口**。
+-   `main_plotAPE.m`: **APE对比绘图入口**。
+-   `main_plotBoxViolin.m`: **ATE分布对比入口**。
+-   `readTrajectory.m`: **数据读取函数**。
+-   `alignAndComputeATE.m`: **核心计算函数**，执行时间关联、SE(3)对齐和ATE计算。
+-   `plotTrajectories.m`, `plotATE.m`, `plotAPEComparison.m`, `plotATEDistributions.m`: 各类**可视化函数**。
+-   `saveTrajectoryData.m`: **数据保存函数**。
+
+### 5.2 核心算法
+-   **时间关联**: 使用线性插值将估计轨迹的数据点对齐到真值轨迹的时间戳上。
+-   **空间对齐**: 使用Horn方法（基于SVD分解）计算最优的SE(3)变换。
+-   **ATE计算**: 计算对齐后轨迹间的欧几里得距离。
+
+## 6. 关键文档
+- **模块文档**:
+  - [`main.m` 模块详解](./Docs/main.md)
+  - [`main_plotAPE.m` 模块详解](./Docs/main_plotAPE.md)
+  - [`main_plotBoxViolin.m` 模块详解](./Docs/main_plotBoxViolin.md)
+- **概念与算法**:
+  - [ATE 概念详解](./Docs/ate_introduction.md)
+  - [核心算法逻辑详解](./Docs/algorithm_details.md)
+
+## 7. 注意事项
 - 请确保MATLAB当前工作目录位于本项目的根目录下。
-- 输入的数据文件必须符合数据格式要求。
-- 确保真值轨迹和估计轨迹有足够的时间重叠，否则无法进行有效的对齐计算。
-- 本工具目前支持SE(3)刚体变换对齐，未来可扩展支持Sim(3)相似变换。
-- 轨迹可视化采用2D俯视图（X-Y平面投影），便于观察轨迹形状。
+- 确保真值轨迹和估计轨迹有足够的时间重叠。
+- 本工具目前支持SE(3)刚体变换对齐。

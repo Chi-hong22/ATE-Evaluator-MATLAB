@@ -1,8 +1,8 @@
-function fig_handles = plotErrorDistributions(varargin)
-% plotErrorDistributions - 绘制多组ATE数据的箱线图与小提琴图
+function fig_handles = plotATEDistributions(varargin)
+% plotATEDistributions - 绘制多组ATE数据的箱线图与小提琴图
 %
 % 用法:
-%   fig_handles = plotErrorDistributions('Name', Value, ...)
+%   fig_handles = plotATEDistributions('Name', Value, ...)
 %
 % Name-Value 选项:
 %   'files'      - (cellstr) 数据文件路径; 若为空则弹窗多选
@@ -162,7 +162,7 @@ function fig_handles = plotErrorDistributions(varargin)
             'Symbol', 'o', 'Widths', 0.5);
     end
     
-    setupAxes(cfg, STYLE, 'ATE Distribution by Path Planning Method');
+    setupAxes(cfg, STYLE, 'Distribution of Absolute Position Error');
     hold off;
 
     % --- 4.2 小提琴图 ---
@@ -201,7 +201,7 @@ function fig_handles = plotErrorDistributions(varargin)
     if opt.save
         if isempty(opt.outputDir)
             timestamp = datestr(now, 'yyyymmdd_HHMMSS');
-            output_dir = fullfile(cfg.RESULTS_DIR_BASE, [timestamp 'ATE_distributions']);
+            output_dir = fullfile(cfg.RESULTS_DIR_BASE, [timestamp '_ATE_distributions']);
         else
             output_dir = opt.outputDir;
         end
@@ -228,7 +228,7 @@ function setupAxes(cfg, STYLE, title_str)
     font_title = round(1.2 * font_axis);
     
     title(title_str, 'FontSize', font_title);
-    ylabel('ATE (m)', 'FontSize', font_axis);
+    ylabel('Absolute Trajectory Error (m)', 'FontSize', font_axis);
     xlabel('Path Planning Method', 'FontSize', font_axis);
     set(ax, 'FontSize', font_axis * 0.9);
     
@@ -314,7 +314,7 @@ function h = violinPlot(group_index, data_values, face_color, edge_color, vararg
     
         h = struct('patch', hp, 'median', gobjects(1), 'mean', gobjects(1));
     
-        % 这部分代码已移至 plotErrorDistributions.m 中绘制, 以确保图层顺序正确
+        % 这部分代码已移至 主要函数 中绘制, 以确保图层顺序正确
         % if opt.ShowCenterStats
         %     med_val = opt.MedianValue;
         %     if isempty(med_val), med_val = median(data_values); end

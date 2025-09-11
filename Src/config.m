@@ -8,8 +8,9 @@ function cfg = config()
     
     %% === 输入文件配置 ===
     % 输入文件夹路径 (请修改为您的数据文件夹)
-    cfg.INPUT_FOLDER = 'Data\250828_NESP_noINS_seed40_yaw_0.05_0.005rad';
+    % cfg.INPUT_FOLDER = 'Data\250828_NESP_noINS_seed40_yaw_0.05_0.005rad';
     % cfg.INPUT_FOLDER = 'Data\250905_noNESP_noINS_seed40_yaw_0.05_0.005rad';
+    cfg.INPUT_FOLDER = 'Data\250911_Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.5';
     
     % 标准文件名
     cfg.GT_FILE_NAME = 'poses_original.txt';        % 真值轨迹文件名

@@ -37,8 +37,8 @@ if optimized_exists
 end
 
 % 定义结果保存路径
-TIMESTAMP = datestr(now, 'yyyy-mm-dd_HH-MM');
-RESULTS_DIR_TIMESTAMPED = fullfile(cfg.RESULTS_DIR_BASE, TIMESTAMP);
+TIMESTAMP = datestr(now, 'yyyymmdd_HHMMSS');
+RESULTS_DIR_TIMESTAMPED = fullfile(cfg.RESULTS_DIR_BASE, [TIMESTAMP, '_ATE_data']);
 
 if (cfg.SAVE_FIGURES || cfg.SAVE_DATA) && ~exist(RESULTS_DIR_TIMESTAMPED, 'dir')
     mkdir(RESULTS_DIR_TIMESTAMPED);
@@ -160,7 +160,7 @@ end
 
 %% --- 5. 保存数据文件 ---
 if cfg.SAVE_DATA
-    fprintf('正在保存数据文件...\n');
+    fprintf('正在保存数据文件, 请勿关闭图窗...\n');
     
     for i = 1:length(trajectory_results)
         result = trajectory_results{i};
