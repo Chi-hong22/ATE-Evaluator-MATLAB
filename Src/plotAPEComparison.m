@@ -134,8 +134,8 @@ function fig_handle = plotAPEComparison(varargin)
     fig_handle = figure('Name', 'XY Planar APE Comparison', 'NumberTitle', 'off');
     
     % 设置图窗尺寸
-    fig_width = cfg.FIGURE_WIDTH_CM * cfg.FIGURE_SIZE_MULTIPLE * 2;
-    fig_height = cfg.FIGURE_HEIGHT_CM * cfg.FIGURE_SIZE_MULTIPLE;
+    fig_width = cfg.FIGURE_WIDTH_CM * cfg.FIGURE_SIZE_MULTIPLE;
+    fig_height = cfg.FIGURE_HEIGHT_CM * cfg.FIGURE_SIZE_MULTIPLE/2;
     set(fig_handle, 'Units', 'centimeters');
     set(fig_handle, 'Position', [2, 2, fig_width, fig_height]);
     set(fig_handle, 'PaperUnits', 'centimeters');
@@ -167,15 +167,15 @@ function fig_handle = plotAPEComparison(varargin)
     font_axis = cfg.FONT_SIZE_BASE * cfg.FONT_SIZE_MULTIPLE;
     font_title = round(font_axis);
     set(ax, 'FontSize', font_axis);
-    set(ax, 'FontName', 'Times New Roman');
+    set(ax, 'FontName', cfg.FONT_NAME);
     
     % 轴标签与标题
-    xlabel('Keyframe Index', 'FontSize', font_axis, 'FontName', 'Times New Roman');
-    ylabel('Absolute Position Error (m)', 'FontSize', font_axis, 'FontName', 'Times New Roman');
-    title('Position Error Evolution across Submaps', 'FontSize', font_title, 'FontName', 'Times New Roman');
+    xlabel('Keyframe Index', 'FontSize', font_axis, 'FontName', cfg.FONT_NAME);
+    ylabel('Absolute Position Error (m)', 'FontSize', font_axis, 'FontName', cfg.FONT_NAME);
+    title('Position Error Evolution across Submaps', 'FontSize', font_title, 'FontName', cfg.FONT_NAME);
     
     % 图例
-    legend('show', 'Location', 'best', 'FontSize', font_axis, 'FontName', 'Times New Roman');
+    legend('show', 'Location', 'best', 'FontSize', font_axis, 'FontName', cfg.FONT_NAME);
     
     fprintf('绘图完成。\n');
     

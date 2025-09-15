@@ -1,8 +1,4 @@
-function plotTrajectories(ax, gt_traj, varargin)
-
-%% 第一节：函数接口文档
-
-% plotTrajectories - 在指定的坐标轴上绘制3D轨迹的2D俯视图对比
+%% plotTrajectories - 在指定的坐标轴上绘制3D轨迹的2D俯视图对比
 %
 % 用法1（对齐轨迹对比模式）:
 %   plotTrajectories(ax, gt_traj, aligned_est_traj, 'aligned')
@@ -27,12 +23,12 @@ function plotTrajectories(ax, gt_traj, varargin)
 %     cfg               - (struct) 配置参数结构体 (可选，默认使用config())
 %     'raw'             - (string) 模式标识，必须为'raw'以启用原始轨迹模式
 
-
-%% 第二节：样式配置初始化
+function plotTrajectories(ax, gt_traj, varargin)
+%% 样式配置初始化
     % 样式配置已迁移到config.m文件中，确保参数一致性
 
 
-%% 第三节：输入参数解析与验证
+%% 输入参数解析与验证
 
     % 初始化变量
     corrupted_traj = [];
@@ -99,7 +95,7 @@ function plotTrajectories(ax, gt_traj, varargin)
     end
 
 
-%% 第四节：轨迹数据绘制
+%% 轨迹数据绘制
 
     % 开始绘图 (只使用X和Y坐标进行2D俯视图绘制)
     hold(ax, 'on');
@@ -147,7 +143,7 @@ function plotTrajectories(ax, gt_traj, varargin)
     
     hold(ax, 'off');
     
-%% 第五节：坐标轴范围优化
+%% 坐标轴范围优化
     
 
     % 保持x, y轴比例一致
@@ -188,16 +184,16 @@ function plotTrajectories(ax, gt_traj, varargin)
     
     set(ax, 'LooseInset', get(ax, 'TightInset')); % 设置紧凑视图，减少坐标轴周围的白边
 
-%% 第六节：图形属性设置
+%% 图形属性设置
     % 设置网格和边框
     grid(ax, 'off');   % 不显示网格
-    box(ax, 'on');     % 显示坐标轴边框
+    box(ax, 'off');     % 显示坐标轴边框
     
     % 设置坐标轴可见性
-    set(ax, 'Visible', 'on');  % 隐藏坐标轴刻度和标签
-
+    set(ax, 'Visible', 'on'); 
     % 添加坐标轴标签
-    xlabel(ax, 'X (m)');
-    ylabel(ax, 'Y (m)');
+    xlabel(ax, 'X (m)', 'FontName', cfg.FONT_NAME);
+    ylabel(ax, 'Y (m)', 'FontName', cfg.FONT_NAME);
+    set(ax, 'FontName', cfg.FONT_NAME);
 
 end

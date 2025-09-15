@@ -227,10 +227,10 @@ function setupAxes(cfg, STYLE, title_str)
     font_axis = cfg.FONT_SIZE_BASE * cfg.FONT_SIZE_MULTIPLE;
     font_title = round(1.2 * font_axis);
     
-    title(title_str, 'FontSize', font_title);
-    ylabel('Absolute Trajectory Error (m)', 'FontSize', font_axis);
-    xlabel('Path Planning Method', 'FontSize', font_axis);
-    set(ax, 'FontSize', font_axis * 0.9);
+    title(title_str, 'FontSize', font_title, 'FontName', cfg.FONT_NAME);
+    ylabel('Absolute Trajectory Error (m)', 'FontSize', font_axis, 'FontName', cfg.FONT_NAME);
+    xlabel('Path Planning Method', 'FontSize', font_axis, 'FontName', cfg.FONT_NAME);
+    set(ax, 'FontSize', font_axis * 0.9, 'FontName', cfg.FONT_NAME);
     
     fig = gcf;
     fig.PaperUnits = 'centimeters';

@@ -181,6 +181,7 @@ for i = 1:length(all_figures)
     
     % 设置字体
     set(findall(fig, '-property', 'FontSize'), 'FontSize', cfg.FONT_SIZE_BASE * cfg.FONT_SIZE_MULTIPLE);
+    set(findall(fig, '-property', 'FontName'), 'FontName', cfg.FONT_NAME);
     
     % 设置尺寸和位置（从左下角开始）
     set(fig, 'Units', 'centimeters');

@@ -8,9 +8,9 @@ function cfg = config()
     
     %% === 输入文件配置 ===
     % 输入文件夹路径 (请修改为您的数据文件夹)
-    % cfg.INPUT_FOLDER = 'Data\250828_NESP_noINS_seed40_yaw_0.05_0.005rad';
+    cfg.INPUT_FOLDER = 'Data\250828_NESP_noINS_seed40_yaw_0.05_0.005rad';
     % cfg.INPUT_FOLDER = 'Data\250905_noNESP_noINS_seed40_yaw_0.05_0.005rad';
-    cfg.INPUT_FOLDER = 'Data\250911_Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.5';
+    % cfg.INPUT_FOLDER = 'Data\250911_Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.5';
     
     % 标准文件名
     cfg.GT_FILE_NAME = 'poses_original.txt';        % 真值轨迹文件名
@@ -26,9 +26,10 @@ function cfg = config()
     
     %% === 绘图参数配置 ===
     % 基础参数
+    cfg.FONT_NAME = 'Arial';       % 全局字体名称
     cfg.FONT_SIZE_BASE = 9;        % 基础字体大小 (pt)
-    cfg.FIGURE_WIDTH_CM = 8.8;     % 图窗宽度 (cm)
-    cfg.FIGURE_HEIGHT_CM = 8.8;    % 图窗高度 (cm)
+    cfg.FIGURE_WIDTH_CM = 4.4;     % 图窗宽度 (cm)
+    cfg.FIGURE_HEIGHT_CM = 4.4;    % 图窗高度 (cm)
     cfg.DPI = 600;                 % 图像分辨率
     
     % 倍数调整参数
@@ -43,22 +44,22 @@ function cfg = config()
     % Ground Truth 样式
     cfg.GT_COLOR = [25, 158, 34]/255;     % 绿色rgb(25, 158, 34)
     cfg.GT_LINE_STYLE = '-';              % 实线
-    cfg.GT_LINE_WIDTH = 3;                % 线宽
+    cfg.GT_LINE_WIDTH = 1.5;                % 线宽
     
     % Corrupted 样式  
     cfg.CORRUPTED_COLOR = [255, 66, 37]/255;  % 红色rgb(255, 66, 37)
     cfg.CORRUPTED_LINE_STYLE = '-';           % 实线
-    cfg.CORRUPTED_LINE_WIDTH = 3;             % 线宽
+    cfg.CORRUPTED_LINE_WIDTH = 1.5;             % 线宽
     
     % Optimized 样式
     cfg.OPTIMIZED_COLOR = [58, 104, 231]/255; % 蓝色rgb(58, 104, 231)
     cfg.OPTIMIZED_LINE_STYLE = '-';           % 实线
-    cfg.OPTIMIZED_LINE_WIDTH = 3;             % 线宽
+    cfg.OPTIMIZED_LINE_WIDTH = 1.5;             % 线宽
     
     % Aligned模式估计轨迹样式（保持向后兼容）
     cfg.EST_COLOR = [255, 66, 37]/255;    % 估计轨迹颜色（红色，与corrupted一致）
     cfg.EST_LINE_STYLE = '-';             % 估计轨迹线型
-    cfg.TRAJECTORY_LINE_WIDTH = 3;        % 轨迹线宽（统一线宽）
+    cfg.TRAJECTORY_LINE_WIDTH = 1.5;        % 轨迹线宽（统一线宽）
     
     % 其他可视化参数
     cfg.ATE_HISTOGRAM_BINS = 50;          % ATE直方图的bins数量
