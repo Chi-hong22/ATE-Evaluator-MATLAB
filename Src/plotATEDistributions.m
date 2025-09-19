@@ -207,8 +207,14 @@ function fig_handles = plotATEDistributions(varargin)
         end
         if ~exist(output_dir, 'dir'), mkdir(output_dir); end
         
+        % 保存箱线图
         saveas(h_box, fullfile(output_dir, '_ATE_error_boxplot.png'));
+        saveas(h_box, fullfile(output_dir, '_ATE_error_boxplot.eps'), 'epsc');
+
+        % 保存小提琴图
         saveas(h_violin, fullfile(output_dir, '_ATE_error_violin.png'));
+        saveas(h_violin, fullfile(output_dir, '_ATE_error_violin.eps'), 'epsc');
+        
         fprintf('Figures saved to: %s\n', output_dir);
     end
 

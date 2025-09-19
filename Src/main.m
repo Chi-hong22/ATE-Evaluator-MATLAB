@@ -199,8 +199,18 @@ if cfg.SAVE_FIGURES
     fprintf('正在保存图像...\n');
     for i = 1:length(all_figures)
         fig = all_figures(i);
-        file_name = fullfile(RESULTS_DIR_TIMESTAMPED, [figure_names{i}, '.png']);
-        print(fig, file_name, '-dpng', ['-r', num2str(cfg.DPI)]);
+        
+        % 同时保存 png 和 eps 格式
+        base_file_name = fullfile(RESULTS_DIR_TIMESTAMPED, figure_names{i});
+        
+        % 保存为 PNG
+        png_file_name = [base_file_name, '.png'];
+        print(fig, png_file_name, '-dpng', ['-r', num2str(cfg.DPI)]);
+        
+        % 保存为 EPS (矢量图)
+        eps_file_name = [base_file_name, '.eps'];
+        print(fig, eps_file_name, '-depsc', ['-r', num2str(cfg.DPI)]); % 使用 -depsc 以保证彩色
+        
     end
     fprintf('所有图像已保存到 %s 文件夹。\n', RESULTS_DIR_TIMESTAMPED);
 else

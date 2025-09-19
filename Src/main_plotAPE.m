@@ -14,26 +14,16 @@ clear; clc;
 fprintf('=== XY平面 APE 对比绘制 ===\n');
 fprintf('开始时间: %s\n\n', datestr(now, 'yyyy-mm-dd HH:MM:SS'));
 
-%% === 配置文件路径 ===
-% 请根据您的实际数据文件修改以下路径
+%% === 加载配置 ===
+% 获取统一配置
+cfg = config();
 
-% NESP 路径文件（示例路径，请修改为实际路径）
-nesp_slam_path = 'Data/250828_NESP_noINS_seed40_yaw_0.05_0.005rad/poses_optimized.txt';
-nesp_gt_path   = 'Data/250828_NESP_noINS_seed40_yaw_0.05_0.005rad/poses_original.txt';
+% 从配置中获取文件路径
+nesp_slam_path = cfg.APE_NESP_SLAM_PATH;
+nesp_gt_path   = cfg.APE_NESP_GT_PATH;
+comb_slam_path = cfg.APE_COMB_SLAM_PATH;
+comb_gt_path   = cfg.APE_COMB_GT_PATH;
 
-% Comb 路径文件（示例路径，请修改为实际路径）
-
-% comb_slam_path = 'Data/250905_noNESP_noINS_seed40_yaw_0.05_0.005rad/poses_optimized.txt';
-% comb_gt_path   = 'Data/250905_noNESP_noINS_seed40_yaw_0.05_0.005rad/poses_original.txt';
-
-% comb_slam_path = 'Data/250828_noNESP_noINS_seed40_yaw_0.05_0.005rad/poses_optimized.txt';
-% comb_gt_path   = 'Data/250828_noNESP_noINS_seed40_yaw_0.05_0.005rad/poses_original.txt';
-
-comb_slam_path = 'Data/250911_Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.5/poses_optimized.txt';
-comb_gt_path   = 'Data/250911_Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.5/poses_original.txt';
-
-% comb_slam_path = 'Data/250911_Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.6/poses_optimized.txt';
-% comb_gt_path   = 'Data/250911_Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.6/poses_original.txt';
 %% === 检查文件是否存在 ===
 files_to_check = {nesp_slam_path, nesp_gt_path, comb_slam_path, comb_gt_path};
 file_labels = {'NESP SLAM', 'NESP GT', 'Comb SLAM', 'Comb GT'};
@@ -50,20 +40,17 @@ fprintf('所有输入文件检查通过。\n\n');
 
 %% === 调用绘图函数 ===
 try
-    % 获取配置
-    cfg = config();
-    
     fprintf('正在调用 plotAPEComparison 函数...\n');
     
-    % 调用主函数
+    % 调用主函数，使用统一配置的参数
     fig_handle = plotAPEComparison(...
         'nespSLAM', nesp_slam_path, ...
         'nespGT', nesp_gt_path, ...
         'combSLAM', comb_slam_path, ...
         'combGT', comb_gt_path, ...
-        'align', true, ...           % 启用时间对齐
-        'save', true, ...            % 保存图像
-        'legendLabels', {'NESP', 'Comb'}, ...
+        'align', cfg.APE_ENABLE_ALIGNMENT, ...      % 从配置获取时间对齐设置
+        'save', cfg.APE_SAVE_RESULTS, ...           % 从配置获取保存设置
+        'legendLabels', cfg.APE_LEGEND_LABELS, ...  % 从配置获取图例标签
         'cfg', cfg);
     
     fprintf('\n=== 执行完成 ===\n');

@@ -8,9 +8,9 @@ function cfg = config()
     
     %% === 输入文件配置 ===
     % 输入文件夹路径 (请修改为您的数据文件夹)
-    cfg.INPUT_FOLDER = 'Data\250828_NESP_noINS_seed40_yaw_0.05_0.005rad';
+    % cfg.INPUT_FOLDER = 'Data\250828_NESP_noINS_seed40_yaw_0.05_0.005rad';
     % cfg.INPUT_FOLDER = 'Data\250905_noNESP_noINS_seed40_yaw_0.05_0.005rad';
-    % cfg.INPUT_FOLDER = 'Data\250911_Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.5';
+    cfg.INPUT_FOLDER = 'Data\250911_Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.5';
     
     % 标准文件名
     cfg.GT_FILE_NAME = 'poses_original.txt';        % 真值轨迹文件名
@@ -28,8 +28,8 @@ function cfg = config()
     % 基础参数
     cfg.FONT_NAME = 'Arial';       % 全局字体名称
     cfg.FONT_SIZE_BASE = 9;        % 基础字体大小 (pt)
-    cfg.FIGURE_WIDTH_CM = 4.4;     % 图窗宽度 (cm)
-    cfg.FIGURE_HEIGHT_CM = 4.4;    % 图窗高度 (cm)
+    cfg.FIGURE_WIDTH_CM = 8.8;     % 图窗宽度 (cm)
+    cfg.FIGURE_HEIGHT_CM = 8.8;    % 图窗高度 (cm)
     cfg.DPI = 600;                 % 图像分辨率
     
     % 倍数调整参数
@@ -63,5 +63,42 @@ function cfg = config()
     
     % 其他可视化参数
     cfg.ATE_HISTOGRAM_BINS = 50;          % ATE直方图的bins数量
+    
+    %% === BoxViolin分布图配置 ===
+    % ATE数据文件路径
+    cfg.BOXVIOLIN_FILES = {
+        'Results\250828_NESP_noINS_seed40_yaw_0.05_0.005rad\ate_details_optimized.csv', ...
+        'Results\250911_Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.5\ate_details_optimized.csv'
+    };
+    
+    % BoxViolin图例标签
+    cfg.BOXVIOLIN_LABELS = {'NESP', 'Comb'};
+    
+    % BoxViolin分析参数
+    cfg.BOXVIOLIN_SAVE_RESULTS = true;    % 保存结果
 
+    %% === APE对比分析配置 ===
+    % NESP数据文件路径
+    cfg.APE_NESP_SLAM_PATH = 'Data/250828_NESP_noINS_seed40_yaw_0.05_0.005rad/poses_optimized.txt';
+    cfg.APE_NESP_GT_PATH   = 'Data/250828_NESP_noINS_seed40_yaw_0.05_0.005rad/poses_original.txt';
+    
+    % Comb数据文件路径
+    % cfg.APE_COMB_SLAM_PATH = 'Data/250905_noNESP_noINS_seed40_yaw_0.05_0.005rad/poses_optimized.txt';
+    % cfg.APE_COMB_GT_PATH   = 'Data/250905_noNESP_noINS_seed40_yaw_0.05_0.005rad/poses_original.txt';
+
+    % cfg.APE_COMB_SLAM_PATH = 'Data/250828_noNESP_noINS_seed40_yaw_0.05_0.005rad/poses_optimized.txt';
+    % cfg.APE_COMB_GT_PATH   = 'Data/250828_noNESP_noINS_seed40_yaw_0.05_0.005rad/poses_original.txt';
+
+    cfg.APE_COMB_SLAM_PATH = 'Data/250911_Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.5/poses_optimized.txt';
+    cfg.APE_COMB_GT_PATH   = 'Data/250911_Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.5/poses_original.txt';
+
+    % cfg.APE_COMB_SLAM_PATH = 'Data/250911_Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.6/poses_optimized.txt';
+    % cfg.APE_COMB_GT_PATH   = 'Data/250911_Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.6/poses_original.txt';
+
+    % APE对比图例标签
+    cfg.APE_LEGEND_LABELS = {'NESP', 'Comb'};
+    
+    % APE分析参数
+    cfg.APE_ENABLE_ALIGNMENT = true;      % 启用时间对齐
+    cfg.APE_SAVE_RESULTS = true;          % 保存结果
 end

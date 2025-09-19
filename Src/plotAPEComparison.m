@@ -195,10 +195,17 @@ function fig_handle = plotAPEComparison(varargin)
         end
         
         % 保存图像
-        output_file = fullfile(output_dir, 'APE_error.png');
-        print(fig_handle, output_file, ['-d' EXPORT_TYPE], ['-r' num2str(cfg.DPI)]);
+        base_file_name = fullfile(output_dir, 'APE_error');
         
-        fprintf('图像已保存至: %s\n', output_file);
+        % 保存为 PNG
+        png_file_name = [base_file_name, '.png'];
+        print(fig_handle, png_file_name, '-dpng', ['-r' num2str(cfg.DPI)]);
+        
+        % 保存为 EPS (矢量图)
+        eps_file_name = [base_file_name, '.eps'];
+        print(fig_handle, eps_file_name, '-depsc', ['-r', num2str(cfg.DPI)]); % 使用 -depsc 以保证彩色
+        
+        fprintf('图像已保存至: %s.png and %s.eps\n', base_file_name, base_file_name);
     end
     
     fprintf('XY平面 APE 对比绘制完成。\n');

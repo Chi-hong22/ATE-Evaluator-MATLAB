@@ -1,3 +1,6 @@
+# Ignore Test directory
+/Test/
+
 # Ignore AI instructions.md file
 /Docs/todo/
 # Ignore all contents of the Data directory

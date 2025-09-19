@@ -6,43 +6,33 @@ function main_plotBoxViolin()
 %
 
     % =========================================================================
-    %                           == 用户配置区 ==
+    %                           == 统一配置管理 ==
     %
-    % 预定义文件路径和标签. 如果 files_to_plot 留空 {}, 将会弹出文件选择对话框.
-    % 示例:
-    % files_to_plot = {
-    %     'Data\ate_A.csv', ...
-    %     'Data\ate_B.csv'
-    % };
-    % labels_for_plot = {'Method A', 'Method B'};
+    % 配置文件路径和标签现在由 config.m 统一管理
+    % 如需修改文件路径和标签，请编辑 Src/config.m 文件
     % =========================================================================
     clear; clc;
 
     fprintf('=== ATE 统计数据对比绘制 ===\n');
     fprintf('开始时间: %s\n\n', datestr(now, 'yyyy-mm-dd HH:MM:SS'));
 
-    files_to_plot   =   {
-        'Results\250828_NESP_noINS_seed40_yaw_0.05_0.005rad\ate_details_optimized.csv',...
-        'Results\250911_Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.5\ate_details_optimized.csv'
-        }; % <--- 在这里填入文件路径 (相对或绝对)
-    labels_for_plot = {
-        'NESP',...
-        'Comb'
-        }; % <--- 在这里填入对应的标签
-
     % 确保 Src 目录在路径中
     if isempty(strfind(path, 'Src'))
         addpath(genpath('Src'));
     end
 
-    % 加载配置
+    % 加载统一配置
     cfg_data = config();
     
-    % 调用核心绘图函数
+    % 从配置中获取文件路径和标签
+    files_to_plot = cfg_data.BOXVIOLIN_FILES;
+    labels_for_plot = cfg_data.BOXVIOLIN_LABELS;
+    
+    % 调用核心绘图函数，使用统一配置的参数
     plotATEDistributions('cfg', cfg_data, ...
                            'files', files_to_plot, ...
                            'labels', labels_for_plot, ...
-                           'save', true);
+                           'save', cfg_data.BOXVIOLIN_SAVE_RESULTS);
     
     fprintf('Plot generation complete.\n');
 
