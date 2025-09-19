@@ -3,6 +3,7 @@
 
 # Ignore AI instructions.md file
 /Docs/todo/
+.github/
 # Ignore all contents of the Data directory
 /Data/*
 
