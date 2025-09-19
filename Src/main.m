@@ -47,7 +47,7 @@ end
 %% --- 2. 加载真值轨迹 ---
 fprintf('\n正在加载真值轨迹数据...\n');
 try
-    [gt_timestamps, gt_traj] = readTrajectory(gt_file_path);
+    [gt_timestamps, gt_traj, ~] = readTrajectory(gt_file_path, 'Mode', 'onlypose');
     fprintf('真值轨迹加载成功，共 %d 个数据点。\n', size(gt_traj, 1));
 catch ME
     error('加载真值轨迹失败: %s', ME.message);
@@ -63,7 +63,7 @@ trajectory_data = {}; % 存储完整的轨迹数据用于保存
 if corrupted_exists
     fprintf('\n正在处理 corrupted 轨迹...\n');
     try
-        [est_timestamps, est_traj] = readTrajectory(est_corrupted_path);
+        [est_timestamps, est_traj, ~] = readTrajectory(est_corrupted_path, 'Mode', 'onlypose');
         raw_corr_traj = est_traj;
         [ate_metrics, aligned_est_traj, gt_associated_traj] = alignAndComputeATE(gt_timestamps, gt_traj, est_timestamps, est_traj);
         
@@ -88,7 +88,7 @@ end
 if optimized_exists
     fprintf('\n正在处理 optimized 轨迹...\n');
     try
-        [est_timestamps, est_traj] = readTrajectory(est_optimized_path);
+        [est_timestamps, est_traj, ~] = readTrajectory(est_optimized_path, 'Mode', 'onlypose');
         raw_opt_traj = est_traj;
         [ate_metrics, aligned_est_traj, gt_associated_traj] = alignAndComputeATE(gt_timestamps, gt_traj, est_timestamps, est_traj);
         

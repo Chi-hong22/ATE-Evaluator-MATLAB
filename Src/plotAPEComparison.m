@@ -104,13 +104,13 @@ function fig_handle = plotAPEComparison(varargin)
     %% === 数据加载 ===
     fprintf('正在加载路径数据...\n');
     
-    % 读取 NESP 路径
-    [nesp_slam_timestamps, nesp_slam_trajectory] = readTrajectory(nesp_slam_file);
-    [nesp_gt_timestamps, nesp_gt_trajectory] = readTrajectory(nesp_gt_file);
+    % 读取 NESP 路径 (只需要位置数据进行APE计算)
+    [nesp_slam_timestamps, nesp_slam_trajectory, ~] = readTrajectory(nesp_slam_file, 'Mode', 'onlypose');
+    [nesp_gt_timestamps, nesp_gt_trajectory, ~] = readTrajectory(nesp_gt_file, 'Mode', 'onlypose');
     
-    % 读取 Comb 路径
-    [comb_slam_timestamps, comb_slam_trajectory] = readTrajectory(comb_slam_file);
-    [comb_gt_timestamps, comb_gt_trajectory] = readTrajectory(comb_gt_file);
+    % 读取 Comb 路径 (只需要位置数据进行APE计算)
+    [comb_slam_timestamps, comb_slam_trajectory, ~] = readTrajectory(comb_slam_file, 'Mode', 'onlypose');
+    [comb_gt_timestamps, comb_gt_trajectory, ~] = readTrajectory(comb_gt_file, 'Mode', 'onlypose');
     
     fprintf('数据加载完成。\n');
     
