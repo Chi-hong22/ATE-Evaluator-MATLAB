@@ -1,10 +1,16 @@
-# ATE-Evaluator-MATLAB: 3D轨迹分析与ATE计算工具
+# MB-SLAM-EvalToolkit: AUV多波束SLAM结果评测与可视化工具（MATLAB）
 
 ## 1. 项目简介
 
-本项目 `ATE-Evaluator-MATLAB` 是一个使用 MATLAB 开发的工具集，用于对带时间戳的3D轨迹数据进行分析和可视化，核心功能是计算绝对轨迹误差（Absolute Trajectory Error, ATE）。它能够自动检测并加载标准格式的轨迹文件，通过 `SE(3)` 变换进行时间关联和空间对齐，并生成一系列符合出版要求的可视化图表和详细的数据报告。
+**MB-SLAM-EvalToolkit** 是一个专为 **AUV（自主水下航行器）多波束声呐SLAM** 设计的 **MATLAB** 评测与可视化工具箱。
+它提供了一套从数据加载、误差计算到结果可视化的完整解决方案，旨在**自动化处理 SLAM 输出的轨迹文件，并生成标准化的评测报告与可视化图表，为算法迭代提供可靠的数据支持。**
 
-本工具旨在复现和整合常见的轨迹评估流程，支持多轨迹对比分析，并提供灵活的配置选项，满足代码调试和论文撰写的双重需求。
+本工具箱的核心特性包括：
+
+- **核心指标计算**: 自动计算 **ATE (绝对轨迹误差)** 和 **APE (绝对位姿误差)**，这是评估轨迹精度的两个基本指标。
+- **误差分布对比**: 支持将多次实验的 ATE 结果绘制成 **箱线图 (Box Plot)** 和 **小提琴图 (Violin Plot)**，方便横向比较不同算法或参数设置的优劣。
+- **轨迹可视化**: 能够将估计轨迹与真值轨迹在空间上自动对齐（SE(3)），并生成 2D 俯视图和 3D 轨迹对比图，可以直观地检查轨迹的吻合程度。
+- **数据与报告导出**: 自动保存计算出的关键指标（如 RMSE、均值等）到 JSON/CSV 文件，并生成用于论文或报告的 PNG 图表。
 
 ## 2. 文件结构
 
@@ -43,9 +49,9 @@
 
 本项目包含三个主要的执行入口脚本，分别用于不同的分析任务。
 
-### 4.1 `main.m` - 核心ATE分析模块
+### 4.1 `main.m` - 核心 ATE/轨迹分析模块
 
-这是项目最核心、功能最全面的脚本，用于对单个或多个估计轨迹进行完整的ATE（绝对轨迹误差）分析。它会自动处理数据加载、时间对齐、空间对齐、误差计算、多维度可视化和结果保存的全过程。
+这是项目最核心、功能最全面的脚本，用于对单个或多个估计轨迹进行完整的 ATE（绝对轨迹误差）/APE 分析。它会自动处理数据加载、时间对齐、空间对齐、误差计算、多维度可视化和结果保存的全过程。
 
 **输入:**
 -   **轨迹文件**: 位于 `config.m` 中 `INPUT_FOLDER` 指定的目录下，包含真值及估计轨迹。
@@ -58,7 +64,7 @@
     -   **可视化图表 (PNG)**:
         -   `trajectories_raw.png`: 所有原始轨迹在对齐前的对比图。
         -   `trajectory_comparison_[name].png`: 2D俯视图轨迹对比，直观展示对齐后估计轨迹与真值轨迹的吻合程度。
-        -   `ate_timeseries_[name].png`: ATE随时间变化图，用于识别误差主要发生在轨迹的哪个部分。
+  -   `ate_timeseries_[name].png`: ATE随时间变化图，用于识别误差主要发生在轨迹的哪个部分。
         -   `ate_histogram_[name].png`: ATE误差分布直方图，显示不同误差大小的频率分布。
         -   `ate_cdf_[name].png`: ATE累积分布函数图，展示误差小于特定值的点的百分比。
     -   **数据文件**:
@@ -72,7 +78,7 @@
 
 > **详细说明请参阅**: **[./Docs/main.md](./Docs/main.md)**
 
-### 4.2 `main_plotAPE.m` - APE对比模块
+### 4.2 `main_plotAPE.m` - APE 对比模块
 
 该脚本专门用于对比两种不同方法在XY平面上的APE（绝对位姿误差），生成对比误差曲线图。
 
@@ -95,7 +101,7 @@ matlab -batch "addpath(genpath('Src')); plotAPEComparison('nespSLAM','Data/nesp.
 
 > **详细说明请参阅**: **[./Docs/main_plotAPE.md](./Docs/main_plotAPE.md)**
 
-### 4.3 `main_plotBoxViolin.m` - ATE分布对比模块
+### 4.3 `main_plotBoxViolin.m` - ATE 分布对比模块（箱线/小提琴）
 
 此脚本用于对多份ATE分析结果（通常是 `.csv` 文件）进行横向比较，通过箱形图和小提琴图直观地展示各组数据的统计分布特性。
 
@@ -122,7 +128,7 @@ matlab -batch "addpath(genpath('Src')); plotATEDistributions('files',{'Results/f
 
 ### 5.1 主要函数说明
 -   `config.m`: **配置文件**。集中管理所有用户可调参数。
--   `main.m`: **核心ATE分析入口**。
+-   `main.m`: **核心 ATE/APE 分析入口**。
 -   `main_plotAPE.m`: **APE对比绘图入口**。
 -   `main_plotBoxViolin.m`: **ATE分布对比入口**。
 -   `readTrajectory.m`: **数据读取函数**。
@@ -148,3 +154,14 @@ matlab -batch "addpath(genpath('Src')); plotATEDistributions('files',{'Results/f
 - 请确保MATLAB当前工作目录位于本项目的根目录下。
 - 确保真值轨迹和估计轨迹有足够的时间重叠。
 - 本工具目前支持SE(3)刚体变换对齐。
+
+## 8. 引用与致谢
+
+本仓库评测对象主要面向基于多波束声呐的水下 SLAM 实践，相关 SLAM 框架参考并在此基础上修改的实现如下：
+
+- 原项目（参考）：[https://github.com/ignaciotb/bathymetric_slam](https://github.com/ignaciotb/bathymetric_slam)
+- 修改版本（本作者）：[https://github.com/Chi-hong22/bathymetric_slam](https://github.com/Chi-hong22/bathymetric_slam)
+
+### 相关项目引用
+- **[MB-SeabedSim](https://github.com/Chi-hong22/MB-SeabedSim)**: 用于生成水下地形的 MATLAB 工具。
+- **[MB-TerrainSim](https://github.com/Chi-hong22/MB-TerrainSim)**: 多波束声呐海底地形采集仿真工具，可为本项目提供输入数据。
