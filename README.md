@@ -146,6 +146,7 @@ matlab -batch "addpath(genpath('Src')); plotATEDistributions('files',{'Results/f
   - [`main.m` 模块详解](./Docs/main.md)
   - [`main_plotAPE.m` 模块详解](./Docs/main_plotAPE.md)
   - [`main_plotBoxViolin.m` 模块详解](./Docs/main_plotBoxViolin.md)
+  - [`main_cbee_evaluation.m` 模块详解](./Docs/CBEE_evaluation_guide.md)
 - **概念与算法**:
   - [ATE 概念详解](./Docs/ate_introduction.md)
   - [核心算法逻辑详解](./Docs/algorithm_details.md)
