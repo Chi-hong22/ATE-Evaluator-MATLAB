@@ -1,9 +1,9 @@
 
-# `main.m` 模块文档
+# `main_calculateATE.m` 模块文档
 
 ## 1. 模块概述
 
-`main.m` 是用于绝对轨迹误差 (Absolute Trajectory Error, ATE) 分析的核心脚本。该脚本负责加载地面真实轨迹 (Ground Truth) 和一个或多个估计轨迹 (Estimated Trajectories)，对它们进行时间戳对齐和空间对齐，计算ATE，并生成一系列可视化图表和数据文件。
+`main_calculateATE.m` 是用于绝对轨迹误差 (Absolute Trajectory Error, ATE) 分析的核心脚本。该脚本负责加载地面真实轨迹 (Ground Truth) 和一个或多个估计轨迹 (Estimated Trajectories)，对它们进行时间戳对齐和空间对齐，计算ATE，并生成一系列可视化图表和数据文件。
 
 该脚本可以同时处理两种估计轨迹：
 - **Corrupted Trajectory**: 通常指未经优化的、原始的或带有噪声的轨迹。
@@ -84,7 +84,7 @@
     - 确保 `GT_FILE_NAME`, `EST_CORRUPTED_FILE_NAME`, `EST_OPTIMIZED_FILE_NAME` 与您的文件名匹配。
     - 根据需要调整 `SAVE_FIGURES`, `SAVE_DATA` 等保存选项以及图表样式参数。
 2.  **运行脚本**:
-    - 在MATLAB中打开 `main.m` 文件。
+    - 在MATLAB中打开 `main_calculateATE.m` 文件。
     - 点击 "运行" 按钮或在命令行中输入 `main` 并回车。
 3.  **查看结果**:
     - 脚本运行过程中，MATLAB会实时显示生成的图表。

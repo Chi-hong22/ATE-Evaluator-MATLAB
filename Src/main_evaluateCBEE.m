@@ -1,5 +1,5 @@
-%% main_cbee_evaluation - CBEE一致性误差评估执行脚本
-% main_cbee_evaluation 执行CBEE一致性误差评估的顶层脚本
+%% main_evaluateCBEE - CBEE一致性误差评估执行脚本
+% main_evaluateCBEE 执行CBEE一致性误差评估的顶层脚本
 %
 % 该脚本集成了CBEE评估的完整工作流程，从数据加载到结果导出，按照以下步骤执行：
 %   1. 加载并初始化配置
@@ -10,8 +10,8 @@
 %   6. 可视化与导出结果
 %
 % 用法:
-%   直接运行此脚本: run('Src/main_cbee_evaluation.m')
-%   或在MATLAB命令窗口中: main_cbee_evaluation
+%   直接运行此脚本: run('Src/main_evaluateCBEE.m')
+%   或在MATLAB命令窗口中: main_evaluateCBEE
 %
 % 配置参数:
 %   在运行脚本前可以在工作空间设置以下变量：
@@ -27,12 +27,12 @@
 %
 % 示例:
 %   % 基本使用（默认配置）
-%   run('Src/main_cbee_evaluation.m')
+%   run('Src/main_evaluateCBEE.m')
 %
 %   % 自定义配置示例
 %   skip_optimized_submaps = true;    % 跳过优化子地图生成
 %   verbose_output = false;           % 关闭详细输出
-%   run('Src/main_cbee_evaluation.m')
+%   run('Src/main_evaluateCBEE.m')
 %
 % 另请参阅: config, buildCbeeErrorGrid, computeRmsConsistencyError
 %

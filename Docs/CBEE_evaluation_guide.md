@@ -10,7 +10,7 @@
 
 - 将多子图数据投影到统一的XY栅格中 *(`buildCbeeErrorGrid()` 栅格投影)*
 - 对每个栅格格子，计算来自不同子图的点云之间的空间一致性 *(`buildCbeeErrorGrid()` 邻域一致性评估)*
-- 生成直观的**一致性误差热力图**和精确的**RMS一致性误差指标** *(可视化由 `main_cbee_evaluation`, RMS计算由 `computeRmsConsistencyError()`)*
+- 生成直观的**一致性误差热力图**和精确的**RMS一致性误差指标** *(可视化由 `main_evaluateCBEE`, RMS计算由 `computeRmsConsistencyError()`)*
 
 ### 1.2 输入输出
 
@@ -62,15 +62,15 @@ CBEE评估遵循以下六步工作流程：
    - 计算采样点在其他子图邻域中的最近邻距离 *(`knnsearch()` 或 `pdist2()` 调用)*
    - 取最坏情况（最大距离）并平均，得到该格子的一致性误差
 
-5. **全局指标与可视化** *→ 实现函数: `computeRmsConsistencyError()`, `main_cbee_evaluation`*
+5. **全局指标与可视化** *→ 实现函数: `computeRmsConsistencyError()`, `main_evaluateCBEE`*
    - 计算RMS一致性误差：$RMS = \sqrt{\frac{1}{N}\sum_{i,j} value(i,j)^2}$ *(`computeRmsConsistencyError()`)*
-   - 生成伪彩色热力图，直观展示空间误差分布 *(`main_cbee_evaluation` 可视化部分)*
-   - 导出量化指标和详细数据 *(`main_cbee_evaluation` 保存部分)*
+   - 生成伪彩色热力图，直观展示空间误差分布 *(`main_evaluateCBEE` 可视化部分)*
+   - 导出量化指标和详细数据 *(`main_evaluateCBEE` 保存部分)*
 
 ## 3. 函数依赖关系
 
 ```text
-main_cbee_evaluation (顶层脚本)
+main_evaluateCBEE (顶层脚本)
 ├── config() - 配置管理
 ├── setupParallelPool() - 并行池管理
 ├── generateOptimizedSubmaps() [可选] - 生成优化子地图
@@ -403,14 +403,14 @@ end
 
 ## 6. 操作示例
 
-### 6.1 快速开始 *→ 主要脚本: `main_cbee_evaluation.m`*
+### 6.1 快速开始 *→ 主要脚本: `main_evaluateCBEE.m`*
 
 ```matlab
 % 1. 添加路径
 addpath(genpath('Src'));
 
 % 2. 直接运行完整流程 (调用主要脚本)
-run('Src/main_cbee_evaluation.m');
+run('Src/main_evaluateCBEE.m');
 
 % 结果将保存在 Results/CBEE/ 目录下
 ```

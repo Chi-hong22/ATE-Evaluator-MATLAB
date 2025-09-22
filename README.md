@@ -21,7 +21,7 @@
 │   ├── poses_corrupted.txt         # (可选) 估计轨迹数据1
 │   └── poses_optimized.txt         # (可选) 估计轨迹数据2
 ├── Docs/                           # 存放项目文档
-│   ├── main.md                     # main.m 模块文档
+│   ├── main.md                     # main_calculateATE.m 模块文档
 │   ├── main_plotAPE.md             # main_plotAPE.m 模块文档
 │   ├── main_plotBoxViolin.md       # main_plotBoxViolin.m 模块文档
 │   ├── ate_introduction.md         # ATE概念详解
@@ -30,7 +30,7 @@
 │   └── ...                         # (示例) 带时间戳的结果文件夹
 ├── Src/                            # 存放所有 MATLAB 源代码 (.m)
 │   ├── config.m                  # 配置文件
-│   ├── main.m                    # 主程序脚本
+│   ├── main_calculateATE.m                    # 主程序脚本
 │   ├── main_plotAPE.m              # APE对比绘图入口脚本
 │   ├── main_plotBoxViolin.m        # ATE分布对比入口脚本
 │   └── ...                       # 其他核心函数
@@ -49,7 +49,7 @@
 
 本项目包含三个主要的执行入口脚本，分别用于不同的分析任务。
 
-### 4.1 `main.m` - 核心 ATE/轨迹分析模块
+### 4.1 `main_calculateATE.m` - 核心 ATE/轨迹分析模块
 
 这是项目最核心、功能最全面的脚本，用于对单个或多个估计轨迹进行完整的 ATE（绝对轨迹误差）/APE 分析。它会自动处理数据加载、时间对齐、空间对齐、误差计算、多维度可视化和结果保存的全过程。
 
@@ -74,7 +74,7 @@
 
 **使用流程:**
 1.  **配置数据**: 打开 `Src/config.m`，设置 `INPUT_FOLDER` 以及轨迹文件名。
-2.  **运行脚本**: 在MATLAB中直接运行 `Src/main.m`。
+2.  **运行脚本**: 在MATLAB中直接运行 `Src/main_calculateATE.m`。
 
 > **详细说明请参阅**: **[./Docs/main.md](./Docs/main.md)**
 
@@ -128,7 +128,7 @@ matlab -batch "addpath(genpath('Src')); plotATEDistributions('files',{'Results/f
 
 ### 5.1 主要函数说明
 -   `config.m`: **配置文件**。集中管理所有用户可调参数。
--   `main.m`: **核心 ATE/APE 分析入口**。
+-   `main_calculateATE.m`: **核心 ATE/APE 分析入口**。
 -   `main_plotAPE.m`: **APE对比绘图入口**。
 -   `main_plotBoxViolin.m`: **ATE分布对比入口**。
 -   `readTrajectory.m`: **数据读取函数**。
@@ -143,10 +143,10 @@ matlab -batch "addpath(genpath('Src')); plotATEDistributions('files',{'Results/f
 
 ## 6. 关键文档
 - **模块文档**:
-  - [`main.m` 模块详解](./Docs/main.md)
+  - [`main_calculateATE.m` 模块详解](./Docs/main.md)
   - [`main_plotAPE.m` 模块详解](./Docs/main_plotAPE.md)
   - [`main_plotBoxViolin.m` 模块详解](./Docs/main_plotBoxViolin.md)
-  - [`main_cbee_evaluation.m` 模块详解](./Docs/CBEE_evaluation_guide.md)
+  - [`main_evaluateCBEE.m` 模块详解](./Docs/CBEE_evaluation_guide.md)
 - **概念与算法**:
   - [ATE 概念详解](./Docs/ate_introduction.md)
   - [核心算法逻辑详解](./Docs/algorithm_details.md)
