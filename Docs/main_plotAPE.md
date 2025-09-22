@@ -74,3 +74,12 @@
 - 时间戳对齐 (`'align', true`) 对于准确计算APE至关重要，建议始终保持开启。
 - 最终图表的可视效果（如线条颜色、粗细、字体大小）可以通过修改 `config.m` 和 `plotAPEComparison.m` 函数进行定制。
 
+## 6. 保存与导出说明（与实现一致）
+
+- 当调用参数 `'save', true` 时，脚本会在输出目录下保存图像文件。
+- 导出格式与分辨率：
+  - 默认读取 `cfg.save.global.formats`（例如 `{'png','eps'}`）逐一导出；若未配置则退化为仅导出 PNG。
+  - 分辨率读取 `cfg.save.global.dpi`；若未配置则退化为 `cfg.DPI`。
+  - 当包含 `eps` 时，使用 `-depsc` 并推荐 `Renderer='painters'` 以输出矢量图；`dpi` 仅影响嵌入位图对象。
+- 文件命名：保持当前实现 `APE_error.png/.eps` 命名，不改变现有行为。
+

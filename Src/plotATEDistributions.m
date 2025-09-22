@@ -198,24 +198,65 @@ function fig_handles = plotATEDistributions(varargin)
 
     %% 5. 保存
     % =========================================================================
-    if opt.save
+    % 保存开关（尊重新键并保持兼容）：
+    figures_enabled = true;
+    if isfield(cfg,'global') && isfield(cfg.global,'save') && isfield(cfg.global.save,'figures') && ~isempty(cfg.global.save.figures)
+        figures_enabled = logical(cfg.global.save.figures);
+    end
+    ate_enabled = figures_enabled; % 默认跟随全局
+    if isfield(cfg,'ate') && isfield(cfg.ate,'save') && isfield(cfg.ate.save,'enable') && ~isempty(cfg.ate.save.enable)
+        ate_enabled = logical(cfg.ate.save.enable);
+    end
+    effective_save = logical(opt.save) && figures_enabled && ate_enabled;
+
+    if effective_save
         if isempty(opt.outputDir)
             timestamp = datestr(now, 'yyyymmdd_HHMMSS');
-            output_dir = fullfile(cfg.RESULTS_DIR_BASE, [timestamp '_ATE_distributions']);
+            % 使用ATE模块配置的分布输出路径
+            output_dir = fullfile(cfg.ate.paths.output_distributions, [timestamp '_ATE_distributions']);
         else
             output_dir = opt.outputDir;
         end
         if ~exist(output_dir, 'dir'), mkdir(output_dir); end
         
-        % 保存箱线图
-        saveas(h_box, fullfile(output_dir, '_ATE_error_boxplot.png'));
-        saveas(h_box, fullfile(output_dir, '_ATE_error_boxplot.eps'), 'epsc');
-
-        % 保存小提琴图
-        saveas(h_violin, fullfile(output_dir, '_ATE_error_violin.png'));
-        saveas(h_violin, fullfile(output_dir, '_ATE_error_violin.eps'), 'epsc');
+        % 读取全局导出格式与分辨率
+        if isfield(cfg,'global') && isfield(cfg.global,'save')
+            formats = cfg.global.save.formats;
+            dpi_val = cfg.global.save.dpi;
+        else
+            formats = {'png'};
+            dpi_val = 600;
+        end
+        dpi_opt = ['-r', num2str(dpi_val)];
+        
+        % 基础文件名
+        base_box = fullfile(output_dir, 'ATE_error_boxplot');
+        base_violin = fullfile(output_dir, 'ATE_error_violin');
+        
+        % 设置渲染器（EPS 推荐 painters）
+        set(h_box, 'Renderer', 'painters');
+        set(h_violin, 'Renderer', 'painters');
+        
+        % 按格式导出：PNG 使用 -dpng，EPS 使用 -depsc
+        for k = 1:numel(formats)
+            fmt = lower(formats{k});
+            switch fmt
+                case 'png'
+                    print(h_box,    [base_box, '.png'],    '-dpng',  dpi_opt);
+                    print(h_violin, [base_violin, '.png'], '-dpng',  dpi_opt);
+                case 'eps'
+                    print(h_box,    [base_box, '.eps'],    '-depsc', dpi_opt);
+                    print(h_violin, [base_violin, '.eps'], '-depsc', dpi_opt);
+                otherwise
+                    warning('Unsupported export format: %s', fmt);
+            end
+        end
         
         fprintf('Figures saved to: %s\n', output_dir);
+    else
+        if opt.save
+            fprintf('Skip saving ATE distributions: save disabled by cfg.*.save gates.\n');
+        end
     end
 
 end
@@ -230,17 +271,18 @@ function setupAxes(cfg, STYLE, title_str)
     ax.LineWidth = STYLE.axesLineWidth;
     box on;
     
-    font_axis = cfg.FONT_SIZE_BASE * cfg.FONT_SIZE_MULTIPLE;
+    % 全局可视化参数
+    font_axis  = cfg.global.visual.font_size_base * cfg.global.visual.font_size_multiple;
     font_title = round(1.2 * font_axis);
     
-    title(title_str, 'FontSize', font_title, 'FontName', cfg.FONT_NAME);
-    ylabel('Absolute Trajectory Error (m)', 'FontSize', font_axis, 'FontName', cfg.FONT_NAME);
-    xlabel('Path Planning Method', 'FontSize', font_axis, 'FontName', cfg.FONT_NAME);
-    set(ax, 'FontSize', font_axis * 0.9, 'FontName', cfg.FONT_NAME);
+    title(title_str, 'FontSize', font_title, 'FontName', cfg.global.visual.font_name);
+    ylabel('Absolute Trajectory Error (m)', 'FontSize', font_axis, 'FontName', cfg.global.visual.font_name);
+    xlabel('Path Planning Method', 'FontSize', font_axis, 'FontName', cfg.global.visual.font_name);
+    set(ax, 'FontSize', font_axis * 0.9, 'FontName', cfg.global.visual.font_name);
     
     fig = gcf;
     fig.PaperUnits = 'centimeters';
-    fig.PaperSize = [cfg.FIGURE_WIDTH_CM, cfg.FIGURE_HEIGHT_CM] * cfg.FIGURE_SIZE_MULTIPLE;
+    fig.PaperSize = [cfg.global.visual.figure_width_cm, cfg.global.visual.figure_height_cm] * cfg.global.visual.figure_size_multiple;
     fig.PaperPosition = [0 0 fig.PaperSize];
 end
 
@@ -268,7 +310,6 @@ function h = violinPlot(group_index, data_values, face_color, edge_color, vararg
     %
     % 输出:
     %   h - 结构体, 含 patch/median/mean 等图元句柄
-    
         parser = inputParser;
         parser.addParameter('FaceAlpha', 0.35);
         parser.addParameter('LineWidth', 1.8);
@@ -319,18 +360,5 @@ function h = violinPlot(group_index, data_values, face_color, edge_color, vararg
                    'FaceAlpha', opt.FaceAlpha, 'LineWidth', opt.LineWidth);
     
         h = struct('patch', hp, 'median', gobjects(1), 'mean', gobjects(1));
-    
-        % 这部分代码已移至 主要函数 中绘制, 以确保图层顺序正确
-        % if opt.ShowCenterStats
-        %     med_val = opt.MedianValue;
-        %     if isempty(med_val), med_val = median(data_values); end
-        %     mu_val  = opt.MeanValue;
-        %     if isempty(mu_val),  mu_val  = mean(data_values);  end
-        % 
-        %     h.median = line([group_index-0.15, group_index+0.15], [med_val, med_val], ...
-        %                     'Color', [0 0 0], 'LineWidth', 2.2, 'LineStyle', '-'); % 加粗实线
-        %     h.mean   = line([group_index-0.10, group_index+0.10], [mu_val,  mu_val ], ...
-        %                     'Color', [0 0 0], 'LineWidth', 1.8, 'LineStyle', '--'); % 点线
-        % end
-    end
+end
     

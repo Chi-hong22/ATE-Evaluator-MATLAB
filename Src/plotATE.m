@@ -24,18 +24,22 @@ function [fig_timeseries, fig_histogram, fig_cdf] = plotATE(ate_metrics, cfg)
     fig_timeseries = figure('Name', 'ATE vs. Time');
     plot(ate_metrics.errors, 'r-');
     grid on;
-    xlabel('Frame Index', 'FontName', cfg.FONT_NAME);
-    ylabel('ATE (m)', 'FontName', cfg.FONT_NAME);
-    set(gca, 'FontName', cfg.FONT_NAME);
+    xlabel('Frame Index', 'FontName', cfg.global.visual.font_name);
+    ylabel('ATE (m)', 'FontName', cfg.global.visual.font_name);
+    set(gca, 'FontName', cfg.global.visual.font_name);
     % 不设置标题
     
     % --- 2. 创建 ATE 直方图 ---
     fig_histogram = figure('Name', 'ATE Histogram');
-    histogram(ate_metrics.errors, cfg.ATE_HISTOGRAM_BINS);
+    nbins = 50;
+    if isfield(cfg,'ate') && isfield(cfg.ate,'histogram_bins')
+        nbins = cfg.ate.histogram_bins;
+    end
+    histogram(ate_metrics.errors, nbins);
     grid on;
-    xlabel('ATE (m)', 'FontName', cfg.FONT_NAME);
-    ylabel('Frequency', 'FontName', cfg.FONT_NAME);
-    set(gca, 'FontName', cfg.FONT_NAME);
+    xlabel('ATE (m)', 'FontName', cfg.global.visual.font_name);
+    ylabel('Frequency', 'FontName', cfg.global.visual.font_name);
+    set(gca, 'FontName', cfg.global.visual.font_name);
     % 不设置标题
     
     % --- 3. 创建 ATE 累积分布函数 (CDF) ---
@@ -44,9 +48,9 @@ function [fig_timeseries, fig_histogram, fig_cdf] = plotATE(ate_metrics, cfg)
     % 清除cdfplot自动添加的标题
     title('');
     grid on;
-    xlabel('ATE (m)', 'FontName', cfg.FONT_NAME);
-    ylabel('Cumulative Probability', 'FontName', cfg.FONT_NAME);
-    set(gca, 'FontName', cfg.FONT_NAME);
+    xlabel('ATE (m)', 'FontName', cfg.global.visual.font_name);
+    ylabel('Cumulative Probability', 'FontName', cfg.global.visual.font_name);
+    set(gca, 'FontName', cfg.global.visual.font_name);
     % 不设置标题
     
 end

@@ -81,21 +81,21 @@ if skipOptimizedSubmaps
 end
 
 % 检查配置结构体关键字段
-required_path_fields = {'gt_pcd_dir','poses_original','poses_optimized','output_dir'};
+required_path_fields = {'gt_pcd_dir','poses_original','poses_optimized','output_data_results','output_optimized_submaps'};
 for i = 1:numel(required_path_fields)
     f = required_path_fields{i};
-    if ~isfield(cfg, 'paths') || ~isfield(cfg.paths, f)
-        error('配置缺少路径字段 cfg.paths.%s', f);
+    if ~isfield(cfg, 'cbee') || ~isfield(cfg.cbee, 'paths') || ~isfield(cfg.cbee.paths, f)
+        error('配置缺少路径字段 cfg.cbee.paths.%s', f);
     end
 end
 if ~isfield(cfg, 'cbee')
     error('配置缺少 cfg.cbee 段');
 end
 
-% 构建关键文件路径（使用任务六定义的字段）
-pcd_folder = cfg.paths.gt_pcd_dir;
-original_poses_file = cfg.paths.poses_original;
-optimized_poses_file = cfg.paths.poses_optimized;
+% 构建关键文件路径（使用层次化配置）
+pcd_folder = cfg.cbee.paths.gt_pcd_dir;
+original_poses_file = cfg.cbee.paths.poses_original;
+optimized_poses_file = cfg.cbee.paths.poses_optimized;
 
 % 条件化存在性检查
 pcd_folder_exists = exist(pcd_folder, 'dir') == 7;
@@ -162,19 +162,18 @@ if isfield(cfg.cbee, 'visualize') && ~isstruct(cfg.cbee.visualize)
 end
 
 % 标准化输出目录：带时间戳子目录
-TIMESTAMP = datestr(now, 'yyyymmdd_HHMMSS');
-RESULTS_DIR_TIMESTAMPED = fullfile(cfg.paths.output_dir, [TIMESTAMP, '_CBEE_evaluation']);
+TIMESTAMP = datestr(now, cfg.global.save.timestamp);
+% 使用CBEE模块配置的输出路径
+RESULTS_DIR_TIMESTAMPED = fullfile(cfg.cbee.paths.output_data_results, [TIMESTAMP, '_CBEE_evaluation']);
 if ~exist(RESULTS_DIR_TIMESTAMPED, 'dir')
     mkdir(RESULTS_DIR_TIMESTAMPED);
     if verbose
         fprintf('创建结果目录: %s\n', RESULTS_DIR_TIMESTAMPED);
     end
 end
-cfg.paths.output_dir = RESULTS_DIR_TIMESTAMPED;
-% 确保输出子地图目录存在（如需使用）
-if ~isfield(cfg.paths, 'output_submaps_dir') || isempty(cfg.paths.output_submaps_dir)
-    cfg.paths.output_submaps_dir = fullfile(cfg.paths.output_dir, 'submaps');
-end
+cfg.cbee.paths.output_dir = RESULTS_DIR_TIMESTAMPED;
+% 优化子地图输出路径直接使用基础配置路径，让generateOptimizedSubmaps函数处理时间戳
+cfg.cbee.paths.output_submaps_dir = cfg.cbee.paths.output_optimized_submaps;
 
 %% 2. 并行池管理与配置摘要
 actualUseParallel = false; 
@@ -219,7 +218,7 @@ if verbose
 end
 
 %% 3. 生成优化子地图（可选）
-opt_pcd_dir = cfg.paths.gt_pcd_dir;  % 默认使用原始子地图
+opt_pcd_dir = cfg.cbee.paths.gt_pcd_dir;  % 默认使用原始子地图
 temp_opt_dir = '';
 used_temp_submaps_dir = false;
 
@@ -229,15 +228,15 @@ if isfield(cfg.cbee,'options') && isfield(cfg.cbee.options,'generate_optimized_s
             fprintf('生成优化子地图...\n');
         end
         % 选择输出目录：根据是否持久化决定输出到正式目录或临时目录
-    target_submaps_dir = cfg.paths.output_submaps_dir;
+    target_submaps_dir = cfg.cbee.paths.output_submaps_dir;
     save_to_disk = (isfield(cfg.cbee.options,'save_optimized_submaps') && cfg.cbee.options.save_optimized_submaps);
         if ~save_to_disk
             used_temp_submaps_dir = true;
         end
 
-    opt_pcd_dir = generateOptimizedSubmaps(cfg.paths.gt_pcd_dir, ...
-                                            cfg.paths.poses_original, ...
-                                            cfg.paths.poses_optimized, ...
+    opt_pcd_dir = generateOptimizedSubmaps(cfg.cbee.paths.gt_pcd_dir, ...
+                                            cfg.cbee.paths.poses_original, ...
+                                            cfg.cbee.paths.poses_optimized, ...
                                             target_submaps_dir, ...
                         'UseParallel', actualUseParallel, ...
                                             'Verbose', verbose, ...
@@ -367,10 +366,29 @@ if (isfield(cfg.cbee,'options') && isfield(cfg.cbee.options,'save_CBEE_data_resu
                'BackgroundColor', 'w', 'EdgeColor', 'k');
 
     % 保存或关闭
-    if isfield(cfg.cbee,'options') && isfield(cfg.cbee.options,'save_CBEE_data_results') && cfg.cbee.options.save_CBEE_data_results
-        saveas(fig, fullfile(cfg.paths.output_dir, 'cbee_error_map.png'));
+    % 图片保存 gating：需要 CBEE 保存选项 且 全局图像保存开启
+    figures_enabled = cfg.global.save.figures;
+    save_cbee_opt = (isfield(cfg.cbee,'options') && isfield(cfg.cbee.options,'save_CBEE_data_results') && cfg.cbee.options.save_CBEE_data_results);
+    if save_cbee_opt && figures_enabled
+        % 导出格式/分辨率（使用全局配置）
+        formats = cfg.global.save.formats;
+        dpi_val = cfg.global.save.dpi;
+        dpi_opt = ['-r', num2str(dpi_val)];
+        set(fig, 'Renderer', 'painters');
+        base_file = fullfile(cfg.cbee.paths.output_dir, 'cbee_error_map');
+        for k = 1:numel(formats)
+            fmt = lower(formats{k});
+            switch fmt
+                case 'png'
+                    print(fig, [base_file, '.png'], '-dpng', dpi_opt);
+                case 'eps'
+                    print(fig, [base_file, '.eps'], '-depsc', dpi_opt);
+                otherwise
+                    warning('Unsupported export format: %s', fmt);
+            end
+        end
         if verbose
-            fprintf('  > 已保存热力图: %s\n', fullfile(cfg.paths.output_dir, 'cbee_error_map.png'));
+            fprintf('  > 已保存热力图: %s (formats: %s)\n', base_file, strjoin(formats, ','));
         end
     end
     if ~(isfield(cfg.cbee,'visualize') && isfield(cfg.cbee.visualize,'enable') && cfg.cbee.visualize.enable)
@@ -378,24 +396,27 @@ if (isfield(cfg.cbee,'options') && isfield(cfg.cbee.options,'save_CBEE_data_resu
     end
 end
 
-if isfield(cfg.cbee,'options') && isfield(cfg.cbee.options,'save_CBEE_data_results') && cfg.cbee.options.save_CBEE_data_results
+% 数据保存 gating：需要 CBEE 保存选项 且 全局数据保存开启
+data_enabled = cfg.global.save.data;
+
+if save_cbee_opt && data_enabled
     % 7.2 导出栅格CSV（仅导出有效格）
     [H, W] = size(value_grid);
     [J, I] = meshgrid(1:W, 1:H);  % 注意I行、J列
     valid_idx = ~isnan(value_grid);
     T = table(I(valid_idx), J(valid_idx), value_grid(valid_idx), ...
               'VariableNames', {'row', 'col', 'error'});
-    writetable(T, fullfile(cfg.paths.output_dir, 'cbee_error_grid.csv'));
+    writetable(T, fullfile(cfg.cbee.paths.output_dir, 'cbee_error_grid.csv'));
     if verbose
-        fprintf('  > 已保存栅格数据: %s\n', fullfile(cfg.paths.output_dir, 'cbee_error_grid.csv'));
+        fprintf('  > 已保存栅格数据: %s\n', fullfile(cfg.cbee.paths.output_dir, 'cbee_error_grid.csv'));
     end
 
     % 7.3 导出RMS文本与MAT结果
-    fid = fopen(fullfile(cfg.paths.output_dir, 'cbee_rms.txt'), 'w');
+    fid = fopen(fullfile(cfg.cbee.paths.output_dir, 'cbee_rms.txt'), 'w');
     fprintf(fid, 'RMS=%.6f\n', rms_result.rms_value);
     fclose(fid);
     if verbose
-        fprintf('  > 已保存RMS值: %s\n', fullfile(cfg.paths.output_dir, 'cbee_rms.txt'));
+        fprintf('  > 已保存RMS值: %s\n', fullfile(cfg.cbee.paths.output_dir, 'cbee_rms.txt'));
     end
 
     % 包含元数据的完整结果保存
@@ -403,9 +424,9 @@ if isfield(cfg.cbee,'options') && isfield(cfg.cbee.options,'save_CBEE_data_resul
     save_data.grid_meta = grid_meta;
     save_data.config = cfg.cbee;
     save_data.timestamp = datetime('now');
-    save(fullfile(cfg.paths.output_dir, 'cbee_results.mat'), '-struct', 'save_data');
+    save(fullfile(cfg.cbee.paths.output_dir, 'cbee_results.mat'), '-struct', 'save_data');
     if verbose
-        fprintf('  > 已保存完整结果: %s\n', fullfile(cfg.paths.output_dir, 'cbee_results.mat'));
+        fprintf('  > 已保存完整结果: %s\n', fullfile(cfg.cbee.paths.output_dir, 'cbee_results.mat'));
     end
 end
 

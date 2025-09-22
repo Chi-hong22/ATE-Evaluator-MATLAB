@@ -134,8 +134,8 @@ function fig_handle = plotAPEComparison(varargin)
     fig_handle = figure('Name', 'XY Planar APE Comparison', 'NumberTitle', 'off');
     
     % 设置图窗尺寸
-    fig_width = cfg.FIGURE_WIDTH_CM * cfg.FIGURE_SIZE_MULTIPLE;
-    fig_height = cfg.FIGURE_HEIGHT_CM * cfg.FIGURE_SIZE_MULTIPLE/2;
+    fig_width = cfg.global.visual.figure_width_cm * cfg.global.visual.figure_size_multiple;
+    fig_height = cfg.global.visual.figure_height_cm * cfg.global.visual.figure_size_multiple/2;
     set(fig_handle, 'Units', 'centimeters');
     set(fig_handle, 'Position', [2, 2, fig_width, fig_height]);
     set(fig_handle, 'PaperUnits', 'centimeters');
@@ -164,29 +164,43 @@ function fig_handle = plotAPEComparison(varargin)
     % set(ax, 'MinorGridAlpha', 0.5);
     
     % 字体设置
-    font_axis = cfg.FONT_SIZE_BASE * cfg.FONT_SIZE_MULTIPLE;
+    font_axis = cfg.global.visual.font_size_base * cfg.global.visual.font_size_multiple;
     font_title = round(font_axis);
     set(ax, 'FontSize', font_axis);
-    set(ax, 'FontName', cfg.FONT_NAME);
+    set(ax, 'FontName', cfg.global.visual.font_name);
     
     % 轴标签与标题
-    xlabel('Keyframe Index', 'FontSize', font_axis, 'FontName', cfg.FONT_NAME);
-    ylabel('Absolute Position Error (m)', 'FontSize', font_axis, 'FontName', cfg.FONT_NAME);
-    title('Position Error Evolution across Submaps', 'FontSize', font_title, 'FontName', cfg.FONT_NAME);
+    xlabel('Keyframe Index', 'FontSize', font_axis, 'FontName', cfg.global.visual.font_name);
+    ylabel('Absolute Position Error (m)', 'FontSize', font_axis, 'FontName', cfg.global.visual.font_name);
+    title('Position Error Evolution across Submaps', 'FontSize', font_title, 'FontName', cfg.global.visual.font_name);
     
     % 图例
-    legend('show', 'Location', 'best', 'FontSize', font_axis, 'FontName', cfg.FONT_NAME);
+    legend('show', 'Location', 'best', 'FontSize', font_axis, 'FontName', cfg.global.visual.font_name);
     
     fprintf('绘图完成。\n');
     
     %% === 保存图像 ===
-    if do_save
+    % 保存开关（尊重新键并保持兼容）
+    figures_enabled = true;
+    if isfield(cfg,'save') && isfield(cfg.save,'global') && isfield(cfg.save.global,'figures') && ~isempty(cfg.save.global.figures)
+        figures_enabled = logical(cfg.save.global.figures);
+    elseif isfield(cfg,'SAVE_FIGURES')
+        figures_enabled = logical(cfg.SAVE_FIGURES);
+    end
+    ape_enabled = figures_enabled; % 默认跟随全局
+    if isfield(cfg,'save') && isfield(cfg.save,'APE') && isfield(cfg.save.APE,'enable') && ~isempty(cfg.save.APE.enable)
+        ape_enabled = logical(cfg.save.APE.enable);
+    end
+    effective_save = logical(do_save) && figures_enabled && ape_enabled;
+
+    if effective_save
         fprintf('正在保存图像...\n');
         
         % 确定输出目录
         if isempty(output_dir)
             timestamp = datestr(now, 'yyyymmdd_HHMMSS');
-            output_dir = fullfile(cfg.RESULTS_DIR_BASE, [timestamp '_APE_visualization']);
+            % 使用APE模块配置的输出路径
+            output_dir = fullfile(cfg.ape.paths.output_visualization, [timestamp '_APE_visualization']);
         end
         
         % 创建输出目录
@@ -194,18 +208,43 @@ function fig_handle = plotAPEComparison(varargin)
             mkdir(output_dir);
         end
         
-        % 保存图像
+        % 基础文件名
         base_file_name = fullfile(output_dir, 'APE_error');
         
-        % 保存为 PNG
-        png_file_name = [base_file_name, '.png'];
-        print(fig_handle, png_file_name, '-dpng', ['-r' num2str(cfg.DPI)]);
+        % 读取全局导出格式与分辨率（向后兼容）
+        if isfield(cfg, 'global') && isfield(cfg.global, 'save') && isfield(cfg.global.save, 'formats') && ~isempty(cfg.global.save.formats)
+            formats = cfg.global.save.formats;
+        else
+            formats = {'png'}; % 默认只导出 PNG
+        end
+        if isfield(cfg, 'global') && isfield(cfg.global, 'save') && isfield(cfg.global.save, 'dpi') && ~isempty(cfg.global.save.dpi)
+            dpi_val = cfg.global.save.dpi;
+        else
+            dpi_val = 600; % fallback
+        end
+        dpi_opt = ['-r', num2str(dpi_val)];
         
-        % 保存为 EPS (矢量图)
-        eps_file_name = [base_file_name, '.eps'];
-        print(fig_handle, eps_file_name, '-depsc', ['-r', num2str(cfg.DPI)]); % 使用 -depsc 以保证彩色
+        % 设置渲染器（EPS 推荐 painters）
+        set(fig_handle, 'Renderer', 'painters');
         
-        fprintf('图像已保存至: %s.png and %s.eps\n', base_file_name, base_file_name);
+        % 按格式导出
+        for k = 1:numel(formats)
+            fmt = lower(formats{k});
+            switch fmt
+                case 'png'
+                    print(fig_handle, [base_file_name, '.png'], '-dpng',  dpi_opt);
+                case 'eps'
+                    print(fig_handle, [base_file_name, '.eps'], '-depsc', dpi_opt);
+                otherwise
+                    warning('Unsupported export format: %s', fmt);
+            end
+        end
+        
+        fprintf('图像已保存至: %s (formats: %s)\n', base_file_name, strjoin(formats, ','));
+    else
+        if do_save
+            fprintf('Skip saving APE visualization: save disabled by cfg.save.* gates.\n');
+        end
     end
     
     fprintf('XY平面 APE 对比绘制完成。\n');

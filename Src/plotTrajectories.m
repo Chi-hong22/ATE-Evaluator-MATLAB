@@ -25,7 +25,7 @@
 
 function plotTrajectories(ax, gt_traj, varargin)
 %% 样式配置初始化
-    % 样式配置已迁移到config.m文件中，确保参数一致性
+    % 样式配置已迁移到 config.global.visual 中，确保参数一致性
 
 
 %% 输入参数解析与验证
@@ -105,24 +105,24 @@ function plotTrajectories(ax, gt_traj, varargin)
         
         % 绘制Ground Truth轨迹
         plot(ax, gt_traj(:, 1), gt_traj(:, 2), ...
-            'Color', cfg.GT_COLOR, ...
-            'LineStyle', cfg.GT_LINE_STYLE, ...
-            'LineWidth', cfg.GT_LINE_WIDTH);
+            'Color', cfg.global.visual.gt_color, ...
+            'LineStyle', cfg.global.visual.gt_line_style, ...
+            'LineWidth', cfg.global.visual.gt_line_width);
 
         % 绘制Corrupted轨迹（若存在）
         if ~isempty(corrupted_traj)
             plot(ax, corrupted_traj(:, 1), corrupted_traj(:, 2), ...
-                'Color', cfg.CORRUPTED_COLOR, ...
-                'LineStyle', cfg.CORRUPTED_LINE_STYLE, ...
-                'LineWidth', cfg.CORRUPTED_LINE_WIDTH);
+                'Color', cfg.global.visual.corrupted_color, ...
+                'LineStyle', cfg.global.visual.corrupted_line_style, ...
+                'LineWidth', cfg.global.visual.corrupted_line_width);
         end
 
         % 绘制Optimized轨迹（若存在）
         if ~isempty(optimized_traj)
             plot(ax, optimized_traj(:, 1), optimized_traj(:, 2), ...
-                'Color', cfg.OPTIMIZED_COLOR, ...
-                'LineStyle', cfg.OPTIMIZED_LINE_STYLE, ...
-                'LineWidth', cfg.OPTIMIZED_LINE_WIDTH);
+                'Color', cfg.global.visual.optimized_color, ...
+                'LineStyle', cfg.global.visual.optimized_line_style, ...
+                'LineWidth', cfg.global.visual.optimized_line_width);
         end
         
     else
@@ -130,15 +130,15 @@ function plotTrajectories(ax, gt_traj, varargin)
         
         % 绘制地面真实轨迹
         plot(ax, gt_traj(:, 1), gt_traj(:, 2), ...
-            'Color', cfg.GT_COLOR, ...
-            'LineStyle', cfg.GT_LINE_STYLE, ...
-            'LineWidth', cfg.GT_LINE_WIDTH);
+            'Color', cfg.global.visual.gt_color, ...
+            'LineStyle', cfg.global.visual.gt_line_style, ...
+            'LineWidth', cfg.global.visual.gt_line_width);
         
         % 绘制对齐后的估计轨迹
         plot(ax, aligned_est_traj(:, 1), aligned_est_traj(:, 2), ...
-            'Color', cfg.EST_COLOR, ...
-            'LineStyle', cfg.EST_LINE_STYLE, ...
-            'LineWidth', cfg.TRAJECTORY_LINE_WIDTH);
+            'Color', cfg.global.visual.est_color, ...
+            'LineStyle', cfg.global.visual.est_line_style, ...
+            'LineWidth', cfg.global.visual.trajectory_line_width);
     end
     
     hold(ax, 'off');
@@ -182,18 +182,17 @@ function plotTrajectories(ax, gt_traj, varargin)
     xlim(ax, [min(all_x) - x_margin, max(all_x) + x_margin]);
     ylim(ax, [min(all_y) - y_margin, max(all_y) + y_margin]);
     
-    set(ax, 'LooseInset', get(ax, 'TightInset')); % 设置紧凑视图，减少坐标轴周围的白边
+    set(ax, 'LooseInset', get(ax, 'TightInset')); % 设置紧凑视图
 
 %% 图形属性设置
     % 设置网格和边框
-    grid(ax, 'off');   % 不显示网格
-    box(ax, 'off');     % 显示坐标轴边框
+    grid(ax, 'off');
+    box(ax, 'off');
     
-    % 设置坐标轴可见性
+    % 设置坐标轴可见性与字体
     set(ax, 'Visible', 'on'); 
-    % 添加坐标轴标签
-    xlabel(ax, 'X (m)', 'FontName', cfg.FONT_NAME);
-    ylabel(ax, 'Y (m)', 'FontName', cfg.FONT_NAME);
-    set(ax, 'FontName', cfg.FONT_NAME);
+    xlabel(ax, 'X (m)', 'FontName', cfg.global.visual.font_name);
+    ylabel(ax, 'Y (m)', 'FontName', cfg.global.visual.font_name);
+    set(ax, 'FontName', cfg.global.visual.font_name);
 
 end

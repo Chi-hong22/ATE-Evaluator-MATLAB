@@ -15,14 +15,14 @@ fprintf('=== XY平面 APE 对比绘制 ===\n');
 fprintf('开始时间: %s\n\n', datestr(now, 'yyyy-mm-dd HH:MM:SS'));
 
 %% === 加载配置 ===
-% 获取统一配置
+% 获取统一配置（新分层）
 cfg = config();
 
 % 从配置中获取文件路径
-nesp_slam_path = cfg.APE_NESP_SLAM_PATH;
-nesp_gt_path   = cfg.APE_NESP_GT_PATH;
-comb_slam_path = cfg.APE_COMB_SLAM_PATH;
-comb_gt_path   = cfg.APE_COMB_GT_PATH;
+nesp_slam_path = cfg.ape.paths.nesp_slam;
+nesp_gt_path   = cfg.ape.paths.nesp_gt;
+comb_slam_path = cfg.ape.paths.comb_slam;
+comb_gt_path   = cfg.ape.paths.comb_gt;
 
 %% === 检查文件是否存在 ===
 files_to_check = {nesp_slam_path, nesp_gt_path, comb_slam_path, comb_gt_path};
@@ -42,15 +42,18 @@ fprintf('所有输入文件检查通过。\n\n');
 try
     fprintf('正在调用 plotAPEComparison 函数...\n');
     
+    % 保存开关（逻辑值）
+    save_flag = logical(cfg.ape.save.enable);
+    
     % 调用主函数，使用统一配置的参数
     fig_handle = plotAPEComparison(...
         'nespSLAM', nesp_slam_path, ...
         'nespGT', nesp_gt_path, ...
         'combSLAM', comb_slam_path, ...
         'combGT', comb_gt_path, ...
-        'align', cfg.APE_ENABLE_ALIGNMENT, ...      % 从配置获取时间对齐设置
-        'save', cfg.APE_SAVE_RESULTS, ...           % 从配置获取保存设置
-        'legendLabels', cfg.APE_LEGEND_LABELS, ...  % 从配置获取图例标签
+        'align', cfg.ape.options.enable_alignment, ...
+        'save', save_flag, ...
+        'legendLabels', cfg.ape.plot.legend_labels, ...
         'cfg', cfg);
     
     fprintf('\n=== 执行完成 ===\n');

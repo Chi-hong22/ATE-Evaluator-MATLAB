@@ -5,18 +5,18 @@ clear; close all; clc;
 % 添加Src目录到MATLAB路径
 addpath(genpath('Src'));
 
-% 加载配置参数
+% 加载配置参数（新分层）
 cfg = config();
 
 % 构建完整文件路径
-gt_file_path = fullfile(cfg.INPUT_FOLDER, cfg.GT_FILE_NAME);
-est_corrupted_path = fullfile(cfg.INPUT_FOLDER, cfg.EST_CORRUPTED_FILE_NAME);
-est_optimized_path = fullfile(cfg.INPUT_FOLDER, cfg.EST_OPTIMIZED_FILE_NAME);
+gt_file_path         = fullfile(cfg.ate.paths.input_folder, cfg.ate.paths.gt_file_name);
+est_corrupted_path   = fullfile(cfg.ate.paths.input_folder, cfg.ate.paths.est_corrupted_name);
+est_optimized_path   = fullfile(cfg.ate.paths.input_folder, cfg.ate.paths.est_optimized_name);
 
 % 检查文件存在性
-gt_exists = isfile(gt_file_path);
-corrupted_exists = isfile(est_corrupted_path);
-optimized_exists = isfile(est_optimized_path);
+gt_exists       = isfile(gt_file_path);
+corrupted_exists= isfile(est_corrupted_path);
+optimized_exists= isfile(est_optimized_path);
 
 % 验证输入
 if ~gt_exists
@@ -36,11 +36,14 @@ if optimized_exists
     fprintf('  估计轨迹(optimized): %s\n', est_optimized_path);
 end
 
-% 定义结果保存路径
-TIMESTAMP = datestr(now, 'yyyymmdd_HHMMSS');
-RESULTS_DIR_TIMESTAMPED = fullfile(cfg.RESULTS_DIR_BASE, [TIMESTAMP, '_ATE_data']);
+% 定义结果保存路径（使用ATE模块路径配置）
+TIMESTAMP = datestr(now, cfg.global.save.timestamp);
+RESULTS_DIR_TIMESTAMPED = fullfile(cfg.ate.paths.output_data, [TIMESTAMP, '_ATE_data']);
 
-if (cfg.SAVE_FIGURES || cfg.SAVE_DATA) && ~exist(RESULTS_DIR_TIMESTAMPED, 'dir')
+save_figures = logical(cfg.global.save.figures);
+save_data    = logical(cfg.global.save.data);
+
+if (save_figures || save_data) && ~exist(RESULTS_DIR_TIMESTAMPED, 'dir')
     mkdir(RESULTS_DIR_TIMESTAMPED);
 end
 
@@ -71,9 +74,10 @@ if corrupted_exists
         trajectory_names{end+1} = 'corrupted';
         
         % 存储完整数据
+        gt_mask = gt_timestamps >= est_timestamps(1) & gt_timestamps <= est_timestamps(end);
         trajectory_data{end+1} = struct(...
-            'timestamps', gt_timestamps(gt_timestamps >= est_timestamps(1) & gt_timestamps <= est_timestamps(end)), ...
-            'original_estimated', interp1(est_timestamps, est_traj, gt_timestamps(gt_timestamps >= est_timestamps(1) & gt_timestamps <= est_timestamps(end)), 'linear'), ...
+            'timestamps', gt_timestamps(gt_mask), ...
+            'original_estimated', interp1(est_timestamps, est_traj, gt_timestamps(gt_mask), 'linear'), ...
             'aligned_estimated', aligned_est_traj, ...
             'ground_truth', gt_associated_traj, ...
             'alignment_type', 'SE3');
@@ -96,9 +100,10 @@ if optimized_exists
         trajectory_names{end+1} = 'optimized';
         
         % 存储完整数据
+        gt_mask = gt_timestamps >= est_timestamps(1) & gt_timestamps <= est_timestamps(end);
         trajectory_data{end+1} = struct(...
-            'timestamps', gt_timestamps(gt_timestamps >= est_timestamps(1) & gt_timestamps <= est_timestamps(end)), ...
-            'original_estimated', interp1(est_timestamps, est_traj, gt_timestamps(gt_timestamps >= est_timestamps(1) & gt_timestamps <= est_timestamps(end)), 'linear'), ...
+            'timestamps', gt_timestamps(gt_mask), ...
+            'original_estimated', interp1(est_timestamps, est_traj, gt_timestamps(gt_mask), 'linear'), ...
             'aligned_estimated', aligned_est_traj, ...
             'ground_truth', gt_associated_traj, ...
             'alignment_type', 'SE3');
@@ -142,15 +147,12 @@ for i = 1:length(trajectory_results)
     % 4.1 轨迹对比图
     fig_traj = figure('Name', sprintf('Trajectory Comparison - %s', traj_name));
     plotTrajectories(gca, result.gt_associated_traj, result.aligned_est_traj, cfg, 'aligned');
-    % 不设置标题
     
     all_figures(end+1) = fig_traj;
     figure_names{end+1} = sprintf('trajectory_comparison_%s', traj_name);
     
     % 4.2 ATE 分析图
     [fig_ate_timeseries, fig_ate_hist, fig_ate_cdf] = plotATE(result.ate_metrics, cfg);
-    
-    % 不设置总标题
     
     all_figures(end+1:end+3) = [fig_ate_timeseries, fig_ate_hist, fig_ate_cdf];
     figure_names{end+1} = sprintf('ate_timeseries_%s', traj_name);
@@ -159,7 +161,7 @@ for i = 1:length(trajectory_results)
 end
 
 %% --- 5. 保存数据文件 ---
-if cfg.SAVE_DATA
+if save_data
     fprintf('正在保存数据文件, 请勿关闭图窗...\n');
     
     for i = 1:length(trajectory_results)
@@ -180,37 +182,42 @@ for i = 1:length(all_figures)
     fig = all_figures(i);
     
     % 设置字体
-    set(findall(fig, '-property', 'FontSize'), 'FontSize', cfg.FONT_SIZE_BASE * cfg.FONT_SIZE_MULTIPLE);
-    set(findall(fig, '-property', 'FontName'), 'FontName', cfg.FONT_NAME);
+    set(findall(fig, '-property', 'FontSize'), 'FontSize', cfg.global.visual.font_size_base * cfg.global.visual.font_size_multiple);
+    set(findall(fig, '-property', 'FontName'), 'FontName', cfg.global.visual.font_name);
     
     % 设置尺寸和位置（从左下角开始）
     set(fig, 'Units', 'centimeters');
     pos = get(fig, 'Position');
-    pos(1) = 2;  % X位置：距离屏幕左边2cm
-    pos(2) = 2;  % Y位置：距离屏幕底边2cm
-    pos(3) = cfg.FIGURE_WIDTH_CM * cfg.FIGURE_SIZE_MULTIPLE;
-    pos(4) = cfg.FIGURE_HEIGHT_CM * cfg.FIGURE_SIZE_MULTIPLE;
+    pos(1) = 2;  % X位置
+    pos(2) = 2;  % Y位置
+    pos(3) = cfg.global.visual.figure_width_cm * cfg.global.visual.figure_size_multiple;
+    pos(4) = cfg.global.visual.figure_height_cm * cfg.global.visual.figure_size_multiple;
     set(fig, 'Position', pos);
 end
 fprintf('图像格式配置完成。\n');
 
 %% --- 7. 保存图像（可选）---
-if cfg.SAVE_FIGURES
+if save_figures
     fprintf('正在保存图像...\n');
+    % 读取导出格式与分辨率
+    formats = cfg.global.save.formats;
+    dpi_val = cfg.global.save.dpi;
+    dpi_opt = ['-r', num2str(dpi_val)];
     for i = 1:length(all_figures)
         fig = all_figures(i);
-        
-        % 同时保存 png 和 eps 格式
+        set(fig, 'Renderer', 'painters');
         base_file_name = fullfile(RESULTS_DIR_TIMESTAMPED, figure_names{i});
-        
-        % 保存为 PNG
-        png_file_name = [base_file_name, '.png'];
-        print(fig, png_file_name, '-dpng', ['-r', num2str(cfg.DPI)]);
-        
-        % 保存为 EPS (矢量图)
-        eps_file_name = [base_file_name, '.eps'];
-        print(fig, eps_file_name, '-depsc', ['-r', num2str(cfg.DPI)]); % 使用 -depsc 以保证彩色
-        
+        for k = 1:numel(formats)
+            fmt = lower(formats{k});
+            switch fmt
+                case 'png'
+                    print(fig, [base_file_name, '.png'], '-dpng',  dpi_opt);
+                case 'eps'
+                    print(fig, [base_file_name, '.eps'], '-depsc', dpi_opt);
+                otherwise
+                    warning('Unsupported export format: %s', fmt);
+            end
+        end
     end
     fprintf('所有图像已保存到 %s 文件夹。\n', RESULTS_DIR_TIMESTAMPED);
 else

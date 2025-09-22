@@ -103,3 +103,12 @@
 -   **内容**: 文件应包含至少一列数值数据。推荐包含**表头**，并使用 `'ate_error'` 或 `'ate'` 来命名误差数据列，以便函数自动识别。
 -   **依赖**: **Statistics and Machine Learning Toolbox** 是生成小提琴图所必需的。
 
+## 6. 保存与导出说明（与实现一致）
+
+- 当入口脚本或调用方设置 `'save', true` 时，图像按配置导出。
+- 导出格式与分辨率：
+  - 读取 `cfg.save.global.formats`（如 `{'png','eps'}`）逐一导出；未配置则默认仅 PNG。
+  - 使用 `cfg.save.global.dpi` 作为分辨率；未配置则回退 `cfg.DPI`。
+  - 当包含 `eps` 时，推荐 `Renderer='painters'` 并使用 `-depsc` 以输出矢量图；`dpi` 仅影响位图嵌入部分。
+- 文件命名：与现有实现保持一致（`_ATE_error_boxplot.*`, `_ATE_error_violin.*`）。
+
