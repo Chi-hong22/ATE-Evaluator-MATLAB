@@ -20,6 +20,7 @@ function output_folder = generateOptimizedSubmaps(gt_pcd_folder, poses_original_
 %       'Verbose'      - 是否显示详细信息 (默认: true)
 %       'UseParallel'  - 是否使用并行处理 (默认: false)
 %       'Verify'       - 是否验证生成结果 (默认: true)
+%       'SaveToDisk'   - 是否持久化保存到输出目录 (默认: false，使用系统临时目录)
 %
 % 输出:
 %   output_folder - 生成的优化子地图目录路径
@@ -47,6 +48,7 @@ function output_folder = generateOptimizedSubmaps(gt_pcd_folder, poses_original_
     addParameter(p, 'Verbose', true, @islogical);
     addParameter(p, 'UseParallel', false, @islogical);
     addParameter(p, 'Verify', true, @islogical);
+    addParameter(p, 'SaveToDisk', false, @islogical);
     parse(p, gt_pcd_folder, poses_original_txt, poses_optimized_txt, output_base_folder, varargin{:});
     
     % 提取参数
@@ -54,6 +56,7 @@ function output_folder = generateOptimizedSubmaps(gt_pcd_folder, poses_original_
     verbose = p.Results.Verbose;
     use_parallel = p.Results.UseParallel;
     verify = p.Results.Verify;
+    save_to_disk = p.Results.SaveToDisk;
     
     % 确保 transform 工具在路径上
     addpath(genpath(fullfile(fileparts(mfilename('fullpath')), 'transform')));
@@ -83,9 +86,16 @@ function output_folder = generateOptimizedSubmaps(gt_pcd_folder, poses_original_
         error('优化轨迹文件不存在: %s', poses_optimized_txt);
     end
     
-    % 创建输出目录
+    % 创建输出目录（根据是否持久化决定位置）
     timestamp = datestr(now, 'yyyymmdd_HHMMSS');
-    output_folder = fullfile(output_base_folder, sprintf('%s_optimized_submaps', timestamp));
+    if save_to_disk
+        output_folder = fullfile(output_base_folder, sprintf('%s_optimized_submaps', timestamp));
+    else
+        base_tmp = fullfile(tempdir, 'cbee_opt_submaps');
+        if ~exist(base_tmp, 'dir'); mkdir(base_tmp); end
+        tmp_uuid = char(java.util.UUID.randomUUID.toString);
+        output_folder = fullfile(base_tmp, sprintf('%s_%s', timestamp, tmp_uuid));
+    end
     if ~exist(output_folder, 'dir')
         mkdir(output_folder);
         if verbose
