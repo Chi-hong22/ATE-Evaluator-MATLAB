@@ -1,5 +1,5 @@
-function [fig_timeseries, fig_histogram, fig_cdf] = plotATE(ate_metrics, cfg)
-% plotATE - 创建三个独立的图窗来可视化ATE指标
+function [fig_timeseries, fig_histogram, fig_cdf] = plotATEData(ate_metrics, cfg)
+% plotATEData - 创建三个独立的图窗来可视化ATE指标
 %
 % 输入:
 %   ate_metrics  - (struct) alignAndComputeATE 返回的ATE指标结构体

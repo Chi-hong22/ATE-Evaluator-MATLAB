@@ -152,7 +152,7 @@ for i = 1:length(trajectory_results)
     figure_names{end+1} = sprintf('trajectory_comparison_%s', traj_name);
     
     % 4.2 ATE 分析图
-    [fig_ate_timeseries, fig_ate_hist, fig_ate_cdf] = plotATE(result.ate_metrics, cfg);
+    [fig_ate_timeseries, fig_ate_hist, fig_ate_cdf] = plotATEData(result.ate_metrics, cfg);
     
     all_figures(end+1:end+3) = [fig_ate_timeseries, fig_ate_hist, fig_ate_cdf];
     figure_names{end+1} = sprintf('ate_timeseries_%s', traj_name);

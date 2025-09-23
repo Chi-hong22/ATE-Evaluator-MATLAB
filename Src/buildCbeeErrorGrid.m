@@ -1,4 +1,4 @@
-function [value_grid, overlap_mask, grid_meta] = buildCbeeErrorGrid(measurements, gridParams)
+function [value_grid, overlap_mask, grid_meta, map_grid] = buildCbeeErrorGrid(measurements, gridParams)
 % BUILDCBEEERRORGRID 基于CBEE的贡献栅格构建与一致性误差图
 %
 % 本函数在已获得"全局坐标系下"的多子图点云集合基础上，构建二维XY栅格，
@@ -14,11 +14,15 @@ function [value_grid, overlap_mask, grid_meta] = buildCbeeErrorGrid(measurements
 %       .min_points_per_cell(int,=3)        单格最小点数（不足视为无效，返回NaN）
 %       .use_parallel       (bool,=false)   是否在格级并行（parfor）
 %       .random_seed        (double|[],=[]) 复现实验的随机种子（[]表示不固定）
+%       .elevation_method   (str,='mean')   高程计算方法：'mean'/'median'/'max'/'min'
+%       .elevation_interp   (str,='linear') 高程插值方法：'none'/'linear'/'nearest'/'natural'
+%       .elevation_smooth_win(int,=0)      高程平滑窗口（奇数，单位格）。0 表示不平滑
 %
 % 输出:
 %   value_grid  : [H×W double]，单格多图一致性误差；无效/无重叠返回NaN
 %   overlap_mask: [H×W logical]，标记 value_grid 有效（~isnan）的位置
 %   grid_meta   : struct，{x_min,y_min,grid_w,grid_h,cell_size_xy}
+%   map_grid    : [H×W double]，栅格高程地图；每格存储该格内点的高程统计值
 %
 % 原理：
 %   在每个格子(i,j)，对各子图当前格内点进行随机采样；对每个被采样的点，
@@ -40,7 +44,7 @@ function [value_grid, overlap_mask, grid_meta] = buildCbeeErrorGrid(measurements
 %       'random_seed', 42);                % 随机种子（可复现）
 %   
 %   % 3. 构建CBEE一致性误差栅格
-%   [value_grid, overlap_mask, grid_meta] = buildCbeeErrorGrid(measurements, gridParams);
+%   [value_grid, overlap_mask, grid_meta, map_grid] = buildCbeeErrorGrid(measurements, gridParams);
 %   
 %   % 4. 可视化结果
 %   figure; 
@@ -94,6 +98,9 @@ nbr_averages = getFieldWithDefault(gridParams, 'nbr_averages', 10);
 min_points_per_cell = getFieldWithDefault(gridParams, 'min_points_per_cell', 3);
 use_parallel = getFieldWithDefault(gridParams, 'use_parallel', false);
 random_seed = getFieldWithDefault(gridParams, 'random_seed', []);
+elevation_method = getFieldWithDefault(gridParams, 'elevation_method', 'mean');
+elevation_interp = getFieldWithDefault(gridParams, 'elevation_interp', 'linear');
+elevation_smooth_win = getFieldWithDefault(gridParams, 'elevation_smooth_win', 0);
 
 % 参数合理性检查
 if mod(neighborhood_size, 2) == 0 || neighborhood_size < 1
@@ -134,6 +141,7 @@ if isempty(valid_measurements)
     value_grid = [];
     overlap_mask = [];
     grid_meta = struct();
+    map_grid = [];
     return;
 end
 
@@ -145,6 +153,7 @@ if num_submaps < 2
     value_grid = [];
     overlap_mask = [];
     grid_meta = struct();
+    map_grid = [];
     return;
 end
 
@@ -230,6 +239,7 @@ fprintf('开始计算单格一致性误差...\n');
 % 初始化输出矩阵
 value_grid = NaN(grid_h, grid_w);
 overlap_mask = false(grid_h, grid_w);
+map_grid = NaN(grid_h, grid_w);  % 栅格高程地图（与误差解耦，独立计算）
 
 % 创建进度显示
 total_cells = grid_w * grid_h;
@@ -240,14 +250,18 @@ progress_interval = max(1, floor(total_cells / 20)); % 5%进度间隔
 if use_parallel && total_cells > 100 % 小数据集不值得并行化
     fprintf('使用并行计算模式...\n');
     
-    % 为并行计算准备数据
+    % 为并行计算准备数据（误差与高程解耦）
     cell_values = NaN(total_cells, 1);
-    
-    % 并行计算每个格子的误差值
+    cell_elevations = NaN(total_cells, 1);  % 高程值数组
+
     parfor linear_idx = 1:(grid_w * grid_h)
+        % 误差：沿用阈值与邻域逻辑
         cell_values(linear_idx) = computeSingleCellError(...
             linear_idx, bins, grid_w, grid_h, num_submaps, ...
             nbr_offsets, nbr_averages, min_points_per_cell);
+        % 高程：不受 min_points_per_cell 限制，独立计算
+        cell_elevations(linear_idx) = computeSingleCellElevation(...
+            linear_idx, bins, grid_w, grid_h, num_submaps, elevation_method);
     end
     
     % 将结果重新整理为矩阵形式
@@ -257,6 +271,7 @@ if use_parallel && total_cells > 100 % 小数据集不值得并行化
         
         value_grid(i_mat, j_mat) = cell_values(linear_idx);
         overlap_mask(i_mat, j_mat) = isfinite(cell_values(linear_idx));
+        map_grid(i_mat, j_mat) = cell_elevations(linear_idx);
     end
     
 else
@@ -267,13 +282,17 @@ else
         for i = 1:grid_w
             linear_idx = i + (j - 1) * grid_w;
             
-            % 计算单格误差
+            % 计算单格误差（带阈值）
             error_value = computeSingleCellError(...
                 linear_idx, bins, grid_w, grid_h, num_submaps, ...
                 nbr_offsets, nbr_averages, min_points_per_cell);
+            % 计算单格高程（无阈值限制）
+            elevation_value = computeSingleCellElevation(...
+                linear_idx, bins, grid_w, grid_h, num_submaps, elevation_method);
             
             value_grid(j, i) = error_value;
             overlap_mask(j, i) = isfinite(error_value);
+            map_grid(j, i) = elevation_value;
             
             % 进度报告
             processed_cells = processed_cells + 1;
@@ -298,6 +317,30 @@ if valid_cells > 0
     fprintf('误差范围：[%.4f, %.4f]\n', min(value_grid(overlap_mask)), max(value_grid(overlap_mask)));
 end
 
+%% 8. 高程地图插值与平滑（可选）
+if ~strcmpi(elevation_interp, 'none')
+    % 使用已知格点进行插值，填充 NaN
+    [H, W] = size(map_grid);
+    [Xc, Yc] = meshgrid(1:W, 1:H);
+    known = ~isnan(map_grid);
+    if any(known(:)) && any(~known(:))
+        F = scatteredInterpolant(Xc(known), Yc(known), map_grid(known), elevation_interp, 'none');
+        filled = map_grid;
+        filled(~known) = F(Xc(~known), Yc(~known));
+        map_grid = filled;
+    end
+end
+
+% 平滑（移动平均）
+if isnumeric(elevation_smooth_win) && elevation_smooth_win >= 3 && mod(elevation_smooth_win,2)==1
+    try
+        map_grid = movmean(map_grid, [floor(elevation_smooth_win/2) floor(elevation_smooth_win/2)], 1, 'omitnan');
+        map_grid = movmean(map_grid, [floor(elevation_smooth_win/2) floor(elevation_smooth_win/2)], 2, 'omitnan');
+    catch
+        % movmean 不支持旧版本时的回退（保持原样）
+    end
+end
+
 end
 
 %% ========== 辅助函数 ==========
@@ -308,6 +351,47 @@ if isfield(structure, fieldname) && ~isempty(structure.(fieldname))
     value = structure.(fieldname);
 else
     value = defaultValue;
+end
+end
+
+function elevation_value = computeSingleCellElevation(linear_idx, bins, grid_w, grid_h, num_submaps, elevation_method)
+% 计算单个格子的高程值（不受 min_points_per_cell 限制）
+
+% 将线性索引转换为2D索引
+[~, ~] = ind2sub([grid_w, grid_h], linear_idx);
+
+% 收集当前格子中所有子图的点
+current_cell_points = cell(num_submaps, 1);
+total_points_in_cell = 0;
+all_z_values = [];  % 收集所有Z值用于高程计算
+
+for m = 1:num_submaps
+    if ~isempty(bins{linear_idx, m})
+        current_cell_points{m} = bins{linear_idx, m};
+        total_points_in_cell = total_points_in_cell + size(bins{linear_idx, m}, 1);
+        % 收集Z值
+        all_z_values = [all_z_values; bins{linear_idx, m}(:, 3)]; %#ok<AGROW>
+    else
+        current_cell_points{m} = [];
+    end
+end
+
+% 直接基于收集到的 Z 计算高程（允许点很少时也返回值）
+if ~isempty(all_z_values)
+    switch lower(elevation_method)
+        case 'mean'
+            elevation_value = mean(all_z_values);
+        case 'median'
+            elevation_value = median(all_z_values);
+        case 'max'
+            elevation_value = max(all_z_values);
+        case 'min'
+            elevation_value = min(all_z_values);
+        otherwise
+            elevation_value = mean(all_z_values);  % 默认使用平均值
+    end
+else
+    elevation_value = NaN;
 end
 end
 

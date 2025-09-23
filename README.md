@@ -133,7 +133,7 @@ matlab -batch "addpath(genpath('Src')); plotATEDistributions('files',{'Results/f
 -   `main_plotBoxViolin.m`: **ATE分布对比入口**。
 -   `readTrajectory.m`: **数据读取函数**。
 -   `alignAndComputeATE.m`: **核心计算函数**，执行时间关联、SE(3)对齐和ATE计算。
--   `plotTrajectories.m`, `plotATE.m`, `plotAPEComparison.m`, `plotATEDistributions.m`: 各类**可视化函数**。
+-   `plotTrajectories.m`, `plotATEData.m`, `plotAPEComparison.m`, `plotATEDistributions.m`: 各类**可视化函数**。
 -   `saveTrajectoryData.m`: **数据保存函数**。
 
 ### 5.2 核心算法

@@ -49,6 +49,8 @@ function output_folder = generateOptimizedSubmaps(gt_pcd_folder, poses_original_
     addParameter(p, 'UseParallel', false, @islogical);
     addParameter(p, 'Verify', true, @islogical);
     addParameter(p, 'SaveToDisk', false, @islogical);
+    % 新增：可选传入全局配置 cfg（用于可视化）
+    addParameter(p, 'cfg', [], @(x) isempty(x) || isstruct(x));
     parse(p, gt_pcd_folder, poses_original_txt, poses_optimized_txt, output_base_folder, varargin{:});
     
     % 提取参数
@@ -57,6 +59,7 @@ function output_folder = generateOptimizedSubmaps(gt_pcd_folder, poses_original_
     use_parallel = p.Results.UseParallel;
     verify = p.Results.Verify;
     save_to_disk = p.Results.SaveToDisk;
+    cfg = p.Results.cfg;
     
     % 确保 transform 工具在路径上
     addpath(genpath(fullfile(fileparts(mfilename('fullpath')), 'transform')));
@@ -127,7 +130,7 @@ function output_folder = generateOptimizedSubmaps(gt_pcd_folder, poses_original_
             if verbose
                 fprintf('\n--- 步骤4: 验证生成结果 ---\n');
             end
-            verifyGeneratedSubmaps(output_folder, verbose);
+            verifyGeneratedSubmaps(output_folder, verbose, cfg);
         end
         
         if verbose
@@ -440,7 +443,7 @@ function rewritePcdViewpoint(src_file, dst_file, new_position, new_quaternion)
     end
 end
 
-function verifyGeneratedSubmaps(output_folder, verbose)
+function verifyGeneratedSubmaps(output_folder, verbose, cfg)
     % 验证生成的子地图文件
     
     try
@@ -457,9 +460,19 @@ function verifyGeneratedSubmaps(output_folder, verbose)
             % 可选：快速可视化验证
             try
                 if exist('visualizeSubmaps', 'file')
-                    fprintf('生成验证可视化...\n');
-                    visualizeSubmaps(measurements, 'ColorBy', 'submap', 'SampleRate', 0.1, 'ShowIndividual', false);
-                    title('Generated Optimized Submaps - Verification');
+                    if ~isempty(cfg) && isstruct(cfg) && isfield(cfg, 'global') && isfield(cfg.global, 'visual')
+                        fprintf('生成验证可视化...\n');
+                        visualizeSubmaps(measurements, ...
+                                        'ColorBy', 'submap', ...
+                                        'SampleRate', 0.1, ...
+                                        'ShowIndividual', false, ...
+                                        'Title', 'Generated Optimized Submaps - Verification', ...
+                                        'GlobalVisual', cfg.global.visual);
+                    else
+                        if verbose
+                            fprintf('未提供 cfg.global.visual，跳过可视化（仍已完成加载验证）\n');
+                        end
+                    end
                 end
             catch
                 if verbose

@@ -38,11 +38,8 @@
 %
 % 作者: CBEE评估工具包
 % 日期: 2025-09-22
-
-%% 脚本配置参数
-% 在运行前可以在工作空间设置以下变量来自定义行为
-
 clear; close all; clc;
+%% 脚本配置参数
 
 % 设置默认值（允许在运行前由工作区覆盖）
 if ~exist('skip_optimized_submaps', 'var')
@@ -217,7 +214,7 @@ if verbose
     end
 end
 
-%% 3. 生成优化子地图（可选）
+%% 3. 生成优化子地图
 opt_pcd_dir = cfg.cbee.paths.gt_pcd_dir;  % 默认使用原始子地图
 temp_opt_dir = '';
 used_temp_submaps_dir = false;
@@ -238,8 +235,10 @@ if isfield(cfg.cbee,'options') && isfield(cfg.cbee.options,'generate_optimized_s
                                             cfg.cbee.paths.poses_original, ...
                                             cfg.cbee.paths.poses_optimized, ...
                                             target_submaps_dir, ...
-                        'UseParallel', actualUseParallel, ...
+                                            'UseParallel',actualUseParallel, ...
                                             'Verbose', verbose, ...
+                                            'Verify', true, ...
+                                            'cfg', cfg, ...
                                             'SaveToDisk', save_to_disk);
         % 若未持久化保存，则记录临时目录以便后续清理
         if ~save_to_disk
@@ -261,22 +260,25 @@ end
 
 measurements = loadAllSubmaps(opt_pcd_dir, ...
                    'TransformToGlobal', true, ...
-                   'UseParallel', actualUseParallel, ...
+                   'UseParallel', false, ...
                    'Verbose', verbose);
 
 % 如果需要，可视化加载的子地图
-if isfield(cfg.cbee,'visualize') && isfield(cfg.cbee.visualize,'enable') && cfg.cbee.visualize.enable ...
-    && isfield(cfg.cbee.visualize,'plot_individual_submaps') && cfg.cbee.visualize.plot_individual_submaps
+if isfield(cfg.cbee,'visualize') && isfield(cfg.cbee.visualize,'enable') && cfg.cbee.visualize.enable
     if verbose
         fprintf('可视化子地图...\n');
     end
-    sample_rate_val = 0.05;
+    sample_rate_val = cfg.cbee.visualize.sample_rate;
     if isfield(cfg.cbee.visualize,'sample_rate'); sample_rate_val = cfg.cbee.visualize.sample_rate; end
+    show_individual = false;
+    if isfield(cfg.cbee.visualize,'plot_individual_submaps')
+        show_individual = logical(cfg.cbee.visualize.plot_individual_submaps);
+    end
     visualizeSubmaps(measurements, ...
                     'ColorBy', 'z', ...
                     'SampleRate', sample_rate_val, ...
-                    'UseParallel', actualUseParallel, ...
-                    'Title', '加载的子地图点云');
+                    'ShowIndividual', show_individual, ...
+                    'GlobalVisual', cfg.global.visual);
     drawnow;
 end
 
@@ -302,9 +304,13 @@ gridParams.use_parallel = actualUseParallel;
 if isfield(cfg.cbee,'random_seed')
     gridParams.random_seed = cfg.cbee.random_seed;
 end
+% 传递高程相关配置（若存在则覆盖默认）
+if isfield(cfg.cbee,'elevation_method');     gridParams.elevation_method = cfg.cbee.elevation_method; end
+if isfield(cfg.cbee,'elevation_interp');     gridParams.elevation_interp = cfg.cbee.elevation_interp; end
+if isfield(cfg.cbee,'elevation_smooth_win'); gridParams.elevation_smooth_win = cfg.cbee.elevation_smooth_win; end
 
 % 执行栅格构建
-[value_grid, overlap_mask, grid_meta] = buildCbeeErrorGrid(measurements, gridParams);
+[value_grid, overlap_mask, grid_meta, map_grid] = buildCbeeErrorGrid(measurements, gridParams);
 
 %% 6. 计算RMS一致性误差
 if verbose
@@ -334,38 +340,46 @@ end
 % 仅在需要保存图像或需要显示时创建图窗
 if (isfield(cfg.cbee,'options') && isfield(cfg.cbee.options,'save_CBEE_data_results') && cfg.cbee.options.save_CBEE_data_results) ...
     || (isfield(cfg.cbee,'visualize') && isfield(cfg.cbee.visualize,'enable') && cfg.cbee.visualize.enable)
-    % 7.1 热力图（透明显示无效格）
-    fig = figure('Color', 'w');
-    imagesc(value_grid);
+    % 一致性误差热力图（透明显示无效格）
+    gv = cfg.global.visual;
+    axis_fs = round(gv.font_size_base * gv.font_size_multiple);
+    title_fs = axis_fs; cb_fs = axis_fs;
+    fig_w_cm = gv.figure_width_cm * gv.figure_size_multiple;
+    fig_h_cm = gv.figure_height_cm * gv.figure_size_multiple;
+
+    fig = figure('Color', 'w', 'Units','centimeters', 'Position', [2, 2, fig_w_cm, fig_h_cm], ...
+                 'Name','CBEE Error Map', 'NumberTitle','off');
+    % 使用物理坐标范围绘制，并将Y轴正向
+    x_range = [grid_meta.x_min, grid_meta.x_min + grid_meta.grid_w * grid_meta.cell_size_xy];
+    y_range = [grid_meta.y_min, grid_meta.y_min + grid_meta.grid_h * grid_meta.cell_size_xy];
+    himg = imagesc(x_range, y_range, value_grid);
+    set(gca, 'YDir', 'normal');
     axis image;
     if isfield(cfg.cbee,'visualize') && isfield(cfg.cbee.visualize,'colormap')
         colormap(cfg.cbee.visualize.colormap);
     else
         colormap(parula);
     end
-    colorbar;
-    title(sprintf('CBEE一致性误差图 (RMS=%.4f)', rms_result.rms_value));
+    cb = colorbar; cb.Label.String = 'Consistency Error';
+    cb.Label.FontSize = cb_fs; cb.Label.FontName = gv.font_name;
+    % 不绘制标题，避免信息冗余（RMS写入文件名）
 
     % 将无效格置为透明
     alpha_data = ~isnan(value_grid);
-    hold on;
-    set(gca, 'ALim', [0 1]);
-    set(get(gca,'Children'), 'AlphaData', alpha_data);
+    set(himg, 'AlphaData', alpha_data);
 
-    % 添加信息文本框
-    dim = [0.15 0.15 0.3 0.3];
-    str = sprintf(['有效格数: %d (%.1f%%)\n', ...
-                  'RMS值: %.4f\n', ...
-                  '误差范围: [%.4f, %.4f]'], ...
-                  rms_result.grid_stats.valid_cells, ...
-                  rms_result.grid_stats.valid_ratio * 100, ...
-                  rms_result.rms_value, ...
-                  rms_result.error_stats.min, ...
-                  rms_result.error_stats.max);
-    annotation('textbox', dim, 'String', str, 'FitBoxToText', true, ...
-               'BackgroundColor', 'w', 'EdgeColor', 'k');
+    % 坐标轴样式与标签
+    set(gca, 'FontName', gv.font_name, 'FontSize', axis_fs);
+    xlabel('X (m)', 'FontName', gv.font_name, 'FontSize', axis_fs);
+    ylabel('Y (m)', 'FontName', gv.font_name, 'FontSize', axis_fs);
 
-    % 保存或关闭
+    % 终端输出统计信息（替代图内文本框）
+    fprintf('\n[CBEE 热力图统计]\n');
+    fprintf('  有效格数: %d (%.1f%%%%)\n', rms_result.grid_stats.valid_cells, rms_result.grid_stats.valid_ratio * 100);
+    fprintf('  RMS值: %.4f\n', rms_result.rms_value);
+    fprintf('  误差范围: [%.4f, %.4f]\n', rms_result.error_stats.min, rms_result.error_stats.max);
+
+%% 保存或关闭
     % 图片保存 gating：需要 CBEE 保存选项 且 全局图像保存开启
     figures_enabled = cfg.global.save.figures;
     save_cbee_opt = (isfield(cfg.cbee,'options') && isfield(cfg.cbee.options,'save_CBEE_data_results') && cfg.cbee.options.save_CBEE_data_results);
@@ -374,8 +388,9 @@ if (isfield(cfg.cbee,'options') && isfield(cfg.cbee.options,'save_CBEE_data_resu
         formats = cfg.global.save.formats;
         dpi_val = cfg.global.save.dpi;
         dpi_opt = ['-r', num2str(dpi_val)];
-        set(fig, 'Renderer', 'painters');
-        base_file = fullfile(cfg.cbee.paths.output_dir, 'cbee_error_map');
+        % 文件名追加RMS值后缀
+        rms_suffix = sprintf('_RMS_%.4f', rms_result.rms_value);
+        base_file = fullfile(cfg.cbee.paths.output_dir, ['cbee_error_map', rms_suffix]);
         for k = 1:numel(formats)
             fmt = lower(formats{k});
             switch fmt
@@ -391,8 +406,69 @@ if (isfield(cfg.cbee,'options') && isfield(cfg.cbee.options,'save_CBEE_data_resu
             fprintf('  > 已保存热力图: %s (formats: %s)\n', base_file, strjoin(formats, ','));
         end
     end
+    
+    % 保存完成后才关闭图形（避免句柄失效）
     if ~(isfield(cfg.cbee,'visualize') && isfield(cfg.cbee.visualize,'enable') && cfg.cbee.visualize.enable)
         close(fig);
+    end
+    
+    %% 7.2 高程地图可视化（使用相同的全局配置）
+    % 创建高程地图图窗
+    fig_elevation = figure('Color', 'w', 'Units','centimeters', 'Position', [4, 4, fig_w_cm, fig_h_cm], ...
+                          'Name','Elevation Map', 'NumberTitle','off');
+    
+    % 使用物理坐标范围绘制高程地图
+    himg_elev = imagesc(x_range, y_range, map_grid);
+    set(gca, 'YDir', 'normal');
+    axis image;
+    
+    % 使用适合高程的颜色映射
+    colormap(jet);  % 高程常用jet或terrain颜色映射
+    
+    cb_elev = colorbar; cb_elev.Label.String = 'Elevation (m)';
+    cb_elev.Label.FontSize = cb_fs; cb_elev.Label.FontName = gv.font_name;
+    
+    % 将无效格置为透明
+    alpha_data_elev = ~isnan(map_grid);
+    set(himg_elev, 'AlphaData', alpha_data_elev);
+    
+    % 坐标轴样式与标签
+    set(gca, 'FontName', gv.font_name, 'FontSize', axis_fs);
+    xlabel('X (m)', 'FontName', gv.font_name, 'FontSize', axis_fs);
+    ylabel('Y (m)', 'FontName', gv.font_name, 'FontSize', axis_fs);
+    
+    % 终端输出高程统计信息
+    valid_elevation_data = map_grid(~isnan(map_grid));
+    if ~isempty(valid_elevation_data)
+        fprintf('\n[高程地图统计]\n');
+        fprintf('  有效格数: %d (%.1f%%%%)\n', sum(~isnan(map_grid(:))), sum(~isnan(map_grid(:)))/numel(map_grid)*100);
+        fprintf('  高程范围: [%.2f, %.2f] m\n', min(valid_elevation_data), max(valid_elevation_data));
+        fprintf('  平均高程: %.2f m\n', mean(valid_elevation_data));
+    end
+    
+    % 保存高程地图（使用相同的保存逻辑）
+    if save_cbee_opt && figures_enabled
+        % 文件名追加高程地图标识
+        elev_base_file = fullfile(cfg.cbee.paths.output_dir, ['cbee_elevation_map', rms_suffix]);
+        for k = 1:numel(formats)
+            fmt = lower(formats{k});
+            switch fmt
+                case 'png'
+                    print(fig_elevation, [elev_base_file, '.png'], '-dpng', dpi_opt);
+                case 'eps'
+                    print(fig_elevation, [elev_base_file, '.eps'], '-depsc', dpi_opt);
+                otherwise
+                    warning('Unsupported export format: %s', fmt);
+            end
+        end
+        if verbose
+            fprintf('  > 已保存高程地图: %s (formats: %s)\n', elev_base_file, strjoin(formats, ','));
+        end
+    end
+    
+    % 保存完成后才关闭高程图形
+    if ~(isfield(cfg.cbee,'visualize') && isfield(cfg.cbee.visualize,'enable') && cfg.cbee.visualize.enable)
+        close(fig_elevation);
     end
 end
 
@@ -400,33 +476,50 @@ end
 data_enabled = cfg.global.save.data;
 
 if save_cbee_opt && data_enabled
-    % 7.2 导出栅格CSV（仅导出有效格）
+    % 导出栅格CSV（仅导出有效格）
     [H, W] = size(value_grid);
     [J, I] = meshgrid(1:W, 1:H);  % 注意I行、J列
     valid_idx = ~isnan(value_grid);
     T = table(I(valid_idx), J(valid_idx), value_grid(valid_idx), ...
               'VariableNames', {'row', 'col', 'error'});
-    writetable(T, fullfile(cfg.cbee.paths.output_dir, 'cbee_error_grid.csv'));
+    rms_suffix = sprintf('_RMS_%.4f', rms_result.rms_value);
+    grid_csv_path = fullfile(cfg.cbee.paths.output_dir, ['cbee_error_grid', rms_suffix, '.csv']);
+    writetable(T, grid_csv_path);
     if verbose
-        fprintf('  > 已保存栅格数据: %s\n', fullfile(cfg.cbee.paths.output_dir, 'cbee_error_grid.csv'));
+        fprintf('  > 已保存栅格数据: %s\n', grid_csv_path);
+    end
+    
+    % 导出高程栅格CSV（仅导出有效格）
+    valid_elev_idx = ~isnan(map_grid);
+    if sum(valid_elev_idx(:)) > 0
+        T_elev = table(I(valid_elev_idx), J(valid_elev_idx), map_grid(valid_elev_idx), ...
+                      'VariableNames', {'row', 'col', 'elevation'});
+        elev_csv_path = fullfile(cfg.cbee.paths.output_dir, ['cbee_elevation_grid', rms_suffix, '.csv']);
+        writetable(T_elev, elev_csv_path);
+        if verbose
+            fprintf('  > 已保存高程栅格数据: %s\n', elev_csv_path);
+        end
     end
 
     % 7.3 导出RMS文本与MAT结果
-    fid = fopen(fullfile(cfg.cbee.paths.output_dir, 'cbee_rms.txt'), 'w');
+    rms_txt_path = fullfile(cfg.cbee.paths.output_dir, ['cbee_rms', rms_suffix, '.txt']);
+    fid = fopen(rms_txt_path, 'w');
     fprintf(fid, 'RMS=%.6f\n', rms_result.rms_value);
     fclose(fid);
     if verbose
-        fprintf('  > 已保存RMS值: %s\n', fullfile(cfg.cbee.paths.output_dir, 'cbee_rms.txt'));
+        fprintf('  > 已保存RMS值: %s\n', rms_txt_path);
     end
 
     % 包含元数据的完整结果保存
     save_data.rms_result = rms_result;
     save_data.grid_meta = grid_meta;
+    save_data.map_grid = map_grid;  % 添加高程地图数据
     save_data.config = cfg.cbee;
     save_data.timestamp = datetime('now');
-    save(fullfile(cfg.cbee.paths.output_dir, 'cbee_results.mat'), '-struct', 'save_data');
+    results_mat_path = fullfile(cfg.cbee.paths.output_dir, ['cbee_results', rms_suffix, '.mat']);
+    save(results_mat_path, '-struct', 'save_data');
     if verbose
-        fprintf('  > 已保存完整结果: %s\n', fullfile(cfg.cbee.paths.output_dir, 'cbee_results.mat'));
+        fprintf('  > 已保存完整结果: %s\n', results_mat_path);
     end
 end
 

@@ -49,11 +49,10 @@ function cfg = config()
 
     % 输入与辅助参数
     cfg.ate.paths = struct();
-    % 旧版示例（保留注释）：
-    % cfg.ate.paths.input_folder = 'Data\250828_NESP_noINS_seed40_yaw_0.05_0.005rad';
-    
-    % cfg.ate.paths.input_folder = 'Data\250905_noNESP_noINS_seed40_yaw_0.05_0.005rad';
+
     % ATE 主流程输入文件夹与标准文件名
+    % cfg.ate.paths.input_folder = 'Data\250828_NESP_noINS_seed40_yaw_0.05_0.005rad';
+    % cfg.ate.paths.input_folder = 'Data\250905_noNESP_noINS_seed40_yaw_0.05_0.005rad';
     cfg.ate.paths.input_folder         = 'Data\250911_Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.5';
 
     cfg.ate.paths.gt_file_name         = 'poses_original.txt';
@@ -64,6 +63,9 @@ function cfg = config()
     cfg.ate.paths.output_data = 'Results/ATE/ATE_data';
     cfg.ate.paths.output_distributions = 'Results/ATE/ATE_distributions';
     
+    % 可视化/分析参数
+    cfg.ate.histogram_bins = 50;
+
     % ATE 分布（BoxViolin）输入
     cfg.ate.paths.boxviolin_files      = {
         'Results\250828_NESP_noINS_seed40_yaw_0.05_0.005rad\ate_details_optimized.csv', ...
@@ -72,9 +74,6 @@ function cfg = config()
 
     % 标签/绘图辅助
     cfg.ate.labels = {'NESP', 'Comb'};
-
-    % 可视化/分析参数
-    cfg.ate.histogram_bins = 50;
 
     % 保存
     cfg.ate.save = struct();
@@ -101,6 +100,7 @@ function cfg = config()
     
     cfg.ape.paths.nesp_slam = 'Data/250828_NESP_noINS_seed40_yaw_0.05_0.005rad/poses_optimized.txt';
     cfg.ape.paths.nesp_gt   = 'Data/250828_NESP_noINS_seed40_yaw_0.05_0.005rad/poses_original.txt';
+    
     cfg.ape.paths.comb_slam = 'Data/250911_Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.5/poses_optimized.txt';
     cfg.ape.paths.comb_gt   = 'Data/250911_Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.5/poses_original.txt';
 
@@ -131,26 +131,26 @@ function cfg = config()
     cfg.cbee.paths.output_optimized_submaps = 'Results/CBEE/CBEE_optimized_submaps';
 
     % 算法参数
-    cfg.cbee.cell_size_xy        = 0.5;
-    cfg.cbee.neighborhood_size   = 3;
-    cfg.cbee.nbr_averages        = 10;
-    cfg.cbee.min_points_per_cell = 3;
-    cfg.cbee.use_parallel        = true;
-    cfg.cbee.num_workers         = [];
-    cfg.cbee.random_seed         = 42;
+    cfg.cbee.cell_size_xy        = 0.5;  % 栅格边长(米)。建议 0.5~2.0，越小越精，但计算量增大。
+    cfg.cbee.neighborhood_size   = 3; % 误差计算的邻域尺寸(k×k，奇数)。常用 3 或 5。
+    cfg.cbee.nbr_averages        = 10; % 单格重复随机采样次数(蒙特卡洛平均)。数值越大越稳定但更慢。
+    cfg.cbee.min_points_per_cell = 3; % 参与误差计算的最小点数阈值。小于该值时该格的一致性误差记为 NaN。
+    cfg.cbee.use_parallel        = true; % 是否在格级启用并行(parfor)。数据量大时建议开启。
+    cfg.cbee.num_workers         = []; % int/[] 并行工作线程数；[] 表示由 MATLAB 自动管理。
+    cfg.cbee.random_seed         = 42; % 随机种子，便于复现实验；[] 表示不固定。
 
     % 可视化
     cfg.cbee.visualize = struct();
-    cfg.cbee.visualize.enable                  = true;
-    cfg.cbee.visualize.colormap                = 'parula';
-    cfg.cbee.visualize.plot_individual_submaps = false;
-    cfg.cbee.visualize.sample_rate             = 0.05;
+    cfg.cbee.visualize.enable                  = true; % 是否在流程中进行可视化
+    cfg.cbee.visualize.colormap                = 'jet'; % 误差/高程图的色图(如 'parula'/'jet' 等)
+    cfg.cbee.visualize.plot_individual_submaps = false; % 是否单独绘制每幅子地图
+    cfg.cbee.visualize.sample_rate             = 0.5; % 子地图可视化采样率，降低绘制点数以提高速度
 
     % 处理选项
     cfg.cbee.options = struct();
-    cfg.cbee.options.generate_optimized_submaps = true;
-    cfg.cbee.options.save_optimized_submaps     = true;
-    cfg.cbee.options.save_CBEE_data_results     = true;
-    cfg.cbee.options.load_only                  = false;
+    cfg.cbee.options.generate_optimized_submaps = true; % 是否先基于轨迹生成“优化子地图”
+    cfg.cbee.options.save_optimized_submaps     = true; % 是否将优化后的子地图持久化到磁盘
+    cfg.cbee.options.save_CBEE_data_results     = true; % 是否导出 CBEE 结果(图片/CSV/MAT)
+    cfg.cbee.options.load_only                  = false; % 仅加载数据，不执行 CBEE 计算与导出。
 
 end

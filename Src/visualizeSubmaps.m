@@ -1,5 +1,4 @@
-function visualizeSubmaps(measurements, varargin)
-% VISUALIZESUBMAPS 可视化已加载的子地图集合
+%% VISUALIZESUBMAPS 可视化已加载的子地图集合
 %
 % 输入:
 %   measurements (cell): `loadAllSubmaps`的输出，每个元胞包含 [N x 3] 点云矩阵
@@ -10,6 +9,7 @@ function visualizeSubmaps(measurements, varargin)
 %       'ShowIndividual' - 是否分别显示各个子地图 (默认: false)
 %       'Title' - 图像标题 (默认: 'Aggregated Submaps')
 %       'UseParallel' - 是否使用并行处理采样 (默认: false)
+%       'GlobalVisual' - 必填，全局可视化参数结构体 cfg.global.visual
 %
 % 输出:
 %   无 (显示图像)
@@ -21,16 +21,17 @@ function visualizeSubmaps(measurements, varargin)
 %
 % 作者: Chihong
 % 日期: 2025-09-18
-
-    % 输入参数解析
+function visualizeSubmaps(measurements, varargin)
+%% 输入参数解析
     p = inputParser;
     addRequired(p, 'measurements', @(x) iscell(x));
     addParameter(p, 'SampleRate', 1.0, @(x) isnumeric(x) && isscalar(x) && x > 0 && x <= 1);
     addParameter(p, 'ColorBy', 'z', @(x) ischar(x) || isstring(x));
     addParameter(p, 'MarkerSize', 1, @(x) isnumeric(x) && isscalar(x) && x > 0);
     addParameter(p, 'ShowIndividual', false, @islogical);
-    addParameter(p, 'Title', 'Aggregated Submaps', @(x) ischar(x) || isstring(x));
+    addParameter(p, 'Title', '', @(x) ischar(x) || isstring(x));
     addParameter(p, 'UseParallel', false, @islogical);
+    addParameter(p, 'GlobalVisual', [], @(x) isstruct(x));
     
     parse(p, measurements, varargin{:});
     
@@ -40,8 +41,11 @@ function visualizeSubmaps(measurements, varargin)
     show_individual = p.Results.ShowIndividual;
     plot_title = char(p.Results.Title);
     use_parallel = p.Results.UseParallel;
+    if isempty(p.Results.GlobalVisual)
+        error('GlobalVisual 为必填参数，请传入 cfg.global.visual');
+    end
     
-    % 验证输入
+%% 验证输入
     if isempty(measurements)
         warning('输入的 measurements 为空，无法可视化');
         return;
@@ -57,13 +61,13 @@ function visualizeSubmaps(measurements, varargin)
     num_submaps = length(valid_measurements);
     fprintf('开始可视化 %d 个子地图...\n', num_submaps);
     
-    % 如果要分别显示各个子地图
+%% 如果要分别显示各个子地图
     if show_individual
-        visualizeIndividualSubmaps(valid_measurements, sample_rate, marker_size);
+        visualizeIndividualSubmaps(valid_measurements, sample_rate, marker_size, p.Results.GlobalVisual, plot_title);
         return;
     end
     
-    % 聚合所有点云数据
+%% 聚合所有点云数据
     fprintf('聚合点云数据...\n');
     tic;
     
@@ -133,7 +137,7 @@ function visualizeSubmaps(measurements, varargin)
         return;
     end
     
-    % 创建可视化
+%% 创建可视化
     fprintf('创建可视化...\n');
     tic;
     
@@ -143,8 +147,9 @@ function visualizeSubmaps(measurements, varargin)
             color_data = all_points(:, 3);  % 使用Z坐标着色
             colormap_name = 'jet';
         case 'submap'
-            color_data = submap_labels;
-            colormap_name = 'lines';
+            color_data = submap_labels; % 每个点的子地图索引（1..num_submaps）
+            % 使用与子地图数量一致的离散调色板，保证相邻索引颜色不同
+            colormap_name = lines(num_submaps);
         case 'random'
             color_data = rand(size(all_points, 1), 1);
             colormap_name = 'hsv';
@@ -154,50 +159,61 @@ function visualizeSubmaps(measurements, varargin)
             colormap_name = 'jet';
     end
     
-    % 创建图像
-    figure('Name', 'Submap Visualization', 'NumberTitle', 'off');
+    % 创建图像（统一使用厘米单位与全局尺寸）
+    figure('Name', 'Submap Visualization', 'NumberTitle', 'off', 'Color','w', ...
+        'Units','centimeters', 'Position', [2, 2, ...
+        p.Results.GlobalVisual.figure_width_cm * p.Results.GlobalVisual.figure_size_multiple, ...
+        p.Results.GlobalVisual.figure_height_cm * p.Results.GlobalVisual.figure_size_multiple]);
     
-    % 使用pcshow进行可视化 (注意: 此函数依赖 Computer Vision Toolbox)
-    pcshow(all_points, color_data, 'MarkerSize', marker_size);
-    % % 使用scatter3进行可视化（更通用，不依赖Computer Vision Toolbox）
-    % scatter3(all_points(:, 1), all_points(:, 2), all_points(:, 3), ...
-    %     marker_size, color_data, 'filled');
+    % 使用二维俯视图绘制（颜色映射 Z）
+    scatter(all_points(:, 1), all_points(:, 2), marker_size, color_data, 'filled');
     
+    axis_fs = round(p.Results.GlobalVisual.font_size_base * p.Results.GlobalVisual.font_size_multiple);
+    title_fs = axis_fs;
+    cb_fs = axis_fs;
+
     % 设置图像属性
-    title(plot_title, 'FontSize', 14, 'FontWeight', 'bold');
-    xlabel('X (m)', 'FontSize', 12);
-    ylabel('Y (m)', 'FontSize', 12);
-    zlabel('Z (m)', 'FontSize', 12);
+    if ~isempty(plot_title)
+        title(plot_title, 'FontSize', title_fs, 'FontName', p.Results.GlobalVisual.font_name);
+    end
+    xlabel('X (m)', 'FontSize', axis_fs, 'FontName', p.Results.GlobalVisual.font_name);
+    ylabel('Y (m)', 'FontSize', axis_fs, 'FontName', p.Results.GlobalVisual.font_name);
+    % 俯视图不显示 Z 轴标签
     
     % 设置颜色映射和颜色条
-    colormap(colormap_name);
+    if strcmpi(color_by, 'submap')
+        % 离散映射：每个整数索引映射到唯一颜色
+        colormap(colormap_name);          % 这里 colormap_name 是一个 N×3 矩阵
+        caxis([1, num_submaps]);          % 确保整数索引对齐到调色板行
+    else
+        colormap(colormap_name);
+    end
     cb = colorbar;
     
     switch lower(color_by)
         case 'z'
-            cb.Label.String = 'Z Coordinate (m)';
+            cb.Label.String = 'Depth (m)';
         case 'submap'
             cb.Label.String = 'Submap Index';
         case 'random'
             cb.Label.String = 'Random Color';
     end
     
-    cb.Label.FontSize = 11;
+    cb.Label.FontSize = cb_fs;
+    cb.Label.FontName = p.Results.GlobalVisual.font_name;
     
     % 设置坐标轴
     axis equal;
-    grid on;
+    grid off;
+    set(gca, 'FontName', p.Results.GlobalVisual.font_name, 'FontSize', axis_fs);
     
-    % 设置视角
-    view(45, 30);
+    % 俯视图，无需 3D 视角
     
-    % 添加统计信息到图像
-    stats_text = sprintf('子地图数: %d\n总点数: %d\n采样率: %.1f%%', ...
-                        num_submaps, size(all_points, 1), sample_rate * 100);
-    
-    % 添加文本框
-    annotation('textbox', [0.02, 0.02, 0.3, 0.15], 'String', stats_text, ...
-               'FontSize', 10, 'BackgroundColor', 'white', 'EdgeColor', 'black');
+%% 终端输出统计信息（替代图内文本框）
+    fprintf('\n可视化统计:\n');
+    fprintf('  子地图数: %d\n', num_submaps);
+    fprintf('  总点数: %d\n', size(all_points, 1));
+    fprintf('  采样率: %.1f%%%\n', sample_rate * 100);
     
     fprintf('可视化完成 (耗时: %.2f 秒)\n', toc);
     
@@ -208,13 +224,24 @@ function visualizeSubmaps(measurements, varargin)
     fprintf('  Z: [%.2f, %.2f] m\n', min(all_points(:,3)), max(all_points(:,3)));
 end
 
-function visualizeIndividualSubmaps(measurements, sample_rate, marker_size)
+%% 辅助函数 - 分别显示各个子地图
+function visualizeIndividualSubmaps(measurements, sample_rate, marker_size, GlobalVisual, TitleStr)
 % VISUALIZEINDIVIDUALSUBMAPS 分别显示各个子地图
 %
 % 输入:
 %   measurements: 子地图集合
 %   sample_rate: 采样率
 %   marker_size: 点大小
+%   gv: 全局可视化参数（cfg.global.visual）
+
+    % 从全局可视化参数计算样式
+    font_name = GlobalVisual.font_name;
+    fs_base   = GlobalVisual.font_size_base;
+    fs_mul    = GlobalVisual.font_size_multiple;
+    fig_w_cm  = GlobalVisual.figure_width_cm * GlobalVisual.figure_size_multiple;
+    fig_h_cm  = GlobalVisual.figure_height_cm * GlobalVisual.figure_size_multiple;
+    axis_fs = round(fs_base * fs_mul);
+    title_fs = max(axis_fs, round(axis_fs * 1.2));
 
     num_submaps = length(measurements);
     fprintf('分别显示 %d 个子地图...\n', num_submaps);
@@ -223,9 +250,9 @@ function visualizeIndividualSubmaps(measurements, sample_rate, marker_size)
     n_cols = ceil(sqrt(num_submaps));
     n_rows = ceil(num_submaps / n_cols);
     
-    % 创建大图像
-    figure('Name', 'Individual Submaps', 'NumberTitle', 'off', ...
-           'Position', [100, 100, 200*n_cols, 200*n_rows]);
+    % 创建大图像（统一使用厘米单位与全局尺寸的网格布局）
+    figure('Name', 'Individual Submaps', 'NumberTitle', 'off', 'Color','w', ...
+        'Units','centimeters', 'Position', [2, 2, fig_w_cm*max(1,n_cols/2), fig_h_cm*max(1,n_rows/2)]);
     
     for i = 1:num_submaps
         subplot(n_rows, n_cols, i);
@@ -240,19 +267,23 @@ function visualizeIndividualSubmaps(measurements, sample_rate, marker_size)
             submap_points = submap_points(sample_indices, :);
         end
         
-        % 绘制点云
-        scatter3(submap_points(:, 1), submap_points(:, 2), submap_points(:, 3), ...
-                 marker_size, submap_points(:, 3), 'filled');
+    % 绘制点云（俯视2D，颜色映射 Z）
+    scatter(submap_points(:, 1), submap_points(:, 2), ...
+         marker_size, submap_points(:, 3), 'filled');
         
-        title(sprintf('Submap %d (%d pts)', i, size(submap_points, 1)), 'FontSize', 10);
-        xlabel('X'); ylabel('Y'); zlabel('Z');
-        axis equal; grid on;
+        title(sprintf('Submap %d (%d pts)', i, size(submap_points, 1)), 'FontSize', max(10, axis_fs), 'FontName', font_name);
+        xlabel('X','FontSize', max(9, axis_fs), 'FontName', font_name);
+        ylabel('Y','FontSize', max(9, axis_fs), 'FontName', font_name);
+    % 俯视图不显示 Z 轴标签
+    axis equal; grid off;
         colormap('jet');
+        set(gca, 'FontName', font_name, 'FontSize', max(9, axis_fs));
         
-        % 设置合适的视角
-        view(45, 30);
+    % 俯视图，无需 3D 视角
     end
     
     % 调整子图间距
-    sgtitle('Individual Submap Visualization', 'FontSize', 14, 'FontWeight', 'bold');
+    if exist('TitleStr','var') && ~isempty(TitleStr)
+        sgtitle(TitleStr, 'FontSize', title_fs, 'FontWeight', 'bold', 'FontName', font_name);
+    end
 end
