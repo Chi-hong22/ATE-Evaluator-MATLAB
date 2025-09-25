@@ -4,6 +4,8 @@
 # Ignore AI instructions.md file
 /Docs/todo/
 .github/
+.qoder/
+.qoder.yml
 # Ignore all contents of the Data directory
 /Data/*
 

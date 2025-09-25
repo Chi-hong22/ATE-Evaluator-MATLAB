@@ -309,8 +309,22 @@ if isfield(cfg.cbee,'elevation_method');     gridParams.elevation_method = cfg.c
 if isfield(cfg.cbee,'elevation_interp');     gridParams.elevation_interp = cfg.cbee.elevation_interp; end
 if isfield(cfg.cbee,'elevation_smooth_win'); gridParams.elevation_smooth_win = cfg.cbee.elevation_smooth_win; end
 
-% 执行栅格构建
-[value_grid, overlap_mask, grid_meta, map_grid] = buildCbeeErrorGrid(measurements, gridParams);
+% 执行栅格构建 (根据 use_sparse 选择实现)
+use_sparse_impl = false;
+if isfield(cfg.cbee,'options') && isfield(cfg.cbee.options,'use_sparse')
+    use_sparse_impl = logical(cfg.cbee.options.use_sparse);
+end
+if use_sparse_impl
+    if verbose
+        fprintf('使用稀疏实现: buildCbeeErrorGrid_sparse ...\n');
+    end
+    [value_grid, overlap_mask, grid_meta, map_grid] = buildCbeeErrorGrid_sparse(measurements, gridParams);
+else
+    if verbose
+        fprintf('使用稠密实现: buildCbeeErrorGrid ...\n');
+    end
+    [value_grid, overlap_mask, grid_meta, map_grid] = buildCbeeErrorGrid(measurements, gridParams);
+end
 
 %% 6. 计算RMS一致性误差
 if verbose

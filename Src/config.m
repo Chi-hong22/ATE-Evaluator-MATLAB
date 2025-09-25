@@ -122,9 +122,14 @@ function cfg = config()
 
     % 路径
     cfg.cbee.paths = struct();
-    cfg.cbee.paths.gt_pcd_dir       = 'Data/CBEE/smallTest/submaps';
-    cfg.cbee.paths.poses_original   = 'Data/CBEE/smallTest/poses_original.txt';
-    cfg.cbee.paths.poses_optimized  = 'Data/CBEE/smallTest/poses_optimized.txt';
+
+    % cfg.cbee.paths.gt_pcd_dir       = 'Data/CBEE/smallTest/submaps';
+    % cfg.cbee.paths.poses_original   = 'Data/CBEE/smallTest/poses_original.txt';
+    % cfg.cbee.paths.poses_optimized  = 'Data/CBEE/smallTest/poses_optimized.txt';
+
+    cfg.cbee.paths.gt_pcd_dir       = 'Data/CBEE/Comb_noINS/submaps';
+    cfg.cbee.paths.poses_original   = 'Data/CBEE/Comb_noINS/Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.5/poses_original.txt';
+    cfg.cbee.paths.poses_optimized  = 'Data/CBEE/Comb_noINS/Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.5/poses_optimized.txt';
     
     % CBEE 输出路径配置
     cfg.cbee.paths.output_data_results = 'Results/CBEE/CBEE_data_results';
@@ -133,7 +138,7 @@ function cfg = config()
     % 算法参数
     cfg.cbee.cell_size_xy        = 0.5;  % 栅格边长(米)。建议 0.5~2.0，越小越精，但计算量增大。
     cfg.cbee.neighborhood_size   = 3; % 误差计算的邻域尺寸(k×k，奇数)。常用 3 或 5。
-    cfg.cbee.nbr_averages        = 10; % 单格重复随机采样次数(蒙特卡洛平均)。数值越大越稳定但更慢。
+    cfg.cbee.nbr_averages        = 5; % 单格重复随机采样次数(蒙特卡洛平均)。数值越大越稳定但更慢。 原参数 10        
     cfg.cbee.min_points_per_cell = 3; % 参与误差计算的最小点数阈值。小于该值时该格的一致性误差记为 NaN。
     cfg.cbee.use_parallel        = true; % 是否在格级启用并行(parfor)。数据量大时建议开启。
     cfg.cbee.num_workers         = []; % int/[] 并行工作线程数；[] 表示由 MATLAB 自动管理。
@@ -144,7 +149,7 @@ function cfg = config()
     cfg.cbee.visualize.enable                  = true; % 是否在流程中进行可视化
     cfg.cbee.visualize.colormap                = 'jet'; % 误差/高程图的色图(如 'parula'/'jet' 等)
     cfg.cbee.visualize.plot_individual_submaps = false; % 是否单独绘制每幅子地图
-    cfg.cbee.visualize.sample_rate             = 0.5; % 子地图可视化采样率，降低绘制点数以提高速度
+    cfg.cbee.visualize.sample_rate             = 1; % 子地图可视化采样率，降低绘制点数以提高速度
 
     % 处理选项
     cfg.cbee.options = struct();
@@ -152,5 +157,6 @@ function cfg = config()
     cfg.cbee.options.save_optimized_submaps     = true; % 是否将优化后的子地图持久化到磁盘
     cfg.cbee.options.save_CBEE_data_results     = true; % 是否导出 CBEE 结果(图片/CSV/MAT)
     cfg.cbee.options.load_only                  = false; % 仅加载数据，不执行 CBEE 计算与导出。
+    cfg.cbee.options.use_sparse                 = true;  % 是否使用稀疏版本 buildCbeeErrorGrid_sparse
 
 end
