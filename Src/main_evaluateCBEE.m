@@ -304,6 +304,15 @@ gridParams.use_parallel = actualUseParallel;
 if isfield(cfg.cbee,'random_seed')
     gridParams.random_seed = cfg.cbee.random_seed;
 end
+% 距离查询/加速方式 (若配置中存在)
+if isfield(cfg.cbee,'options')
+    if isfield(cfg.cbee.options,'distance_method') && ~isempty(cfg.cbee.options.distance_method)
+        gridParams.distance_method = cfg.cbee.options.distance_method; % 'bruteforce' | 'kdtree'
+    end
+    if isfield(cfg.cbee.options,'kdtree_min_points') && ~isempty(cfg.cbee.options.kdtree_min_points)
+        gridParams.kdtree_min_points = cfg.cbee.options.kdtree_min_points;
+    end
+end
 % 传递高程相关配置（若存在则覆盖默认）
 if isfield(cfg.cbee,'elevation_method');     gridParams.elevation_method = cfg.cbee.elevation_method; end
 if isfield(cfg.cbee,'elevation_interp');     gridParams.elevation_interp = cfg.cbee.elevation_interp; end

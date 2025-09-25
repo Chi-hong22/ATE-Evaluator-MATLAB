@@ -42,7 +42,7 @@ function cfg = config()
     cfg.global.save.data      = true;
     cfg.global.save.formats   = {'png','eps'};
     cfg.global.save.dpi       = 600;
-    cfg.global.save.timestamp = 'yyyyMMdd_HHmmss';  % 格式：yyyyMMdd_HHmmss
+    cfg.global.save.timestamp = 'yyyymmdd_HHMMSS';  % 格式：yyyymmdd_HHMMSS
 
 %% === ate（ATE 模块） ===
     cfg.ate = struct();
@@ -53,7 +53,7 @@ function cfg = config()
     % ATE 主流程输入文件夹与标准文件名
     % cfg.ate.paths.input_folder = 'Data\250828_NESP_noINS_seed40_yaw_0.05_0.005rad';
     % cfg.ate.paths.input_folder = 'Data\250905_noNESP_noINS_seed40_yaw_0.05_0.005rad';
-    cfg.ate.paths.input_folder         = 'Data\250911_Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.5';
+    cfg.ate.paths.input_folder = 'Data\250911_Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.5';
 
     cfg.ate.paths.gt_file_name         = 'poses_original.txt';
     cfg.ate.paths.est_corrupted_name   = 'poses_corrupted.txt';
@@ -127,16 +127,21 @@ function cfg = config()
     % cfg.cbee.paths.poses_original   = 'Data/CBEE/smallTest/poses_original.txt';
     % cfg.cbee.paths.poses_optimized  = 'Data/CBEE/smallTest/poses_optimized.txt';
 
-    cfg.cbee.paths.gt_pcd_dir       = 'Data/CBEE/Comb_noINS/submaps';
-    cfg.cbee.paths.poses_original   = 'Data/CBEE/Comb_noINS/Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.5/poses_original.txt';
-    cfg.cbee.paths.poses_optimized  = 'Data/CBEE/Comb_noINS/Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.5/poses_optimized.txt';
+    % cfg.cbee.paths.gt_pcd_dir       = 'Data/CBEE/Comb_noINS/submaps';
+    % cfg.cbee.paths.poses_original   = 'Data/CBEE/Comb_noINS/Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.5/poses_original.txt';
+    % cfg.cbee.paths.poses_optimized  = 'Data/CBEE/Comb_noINS/Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.5/poses_optimized.txt';
     
+    cfg.cbee.paths.gt_pcd_dir       = 'Data/CBEE/NESP_noINS/submaps';
+    cfg.cbee.paths.poses_original   = 'Data/CBEE/NESP_noINS/NESP_noINS_seed40_yaw_0.05_0.005rad/poses_original.txt';
+    cfg.cbee.paths.poses_optimized  = 'Data/CBEE/NESP_noINS/NESP_noINS_seed40_yaw_0.05_0.005rad/poses_optimized.txt';
+
+
     % CBEE 输出路径配置
     cfg.cbee.paths.output_data_results = 'Results/CBEE/CBEE_data_results';
     cfg.cbee.paths.output_optimized_submaps = 'Results/CBEE/CBEE_optimized_submaps';
 
     % 算法参数
-    cfg.cbee.cell_size_xy        = 0.5;  % 栅格边长(米)。建议 0.5~2.0，越小越精，但计算量增大。
+    cfg.cbee.cell_size_xy        = 1;  % 栅格边长(米)。建议 0.5~2.0，越小越精，但计算量增大。
     cfg.cbee.neighborhood_size   = 3; % 误差计算的邻域尺寸(k×k，奇数)。常用 3 或 5。
     cfg.cbee.nbr_averages        = 5; % 单格重复随机采样次数(蒙特卡洛平均)。数值越大越稳定但更慢。 原参数 10        
     cfg.cbee.min_points_per_cell = 3; % 参与误差计算的最小点数阈值。小于该值时该格的一致性误差记为 NaN。
@@ -149,7 +154,7 @@ function cfg = config()
     cfg.cbee.visualize.enable                  = true; % 是否在流程中进行可视化
     cfg.cbee.visualize.colormap                = 'jet'; % 误差/高程图的色图(如 'parula'/'jet' 等)
     cfg.cbee.visualize.plot_individual_submaps = false; % 是否单独绘制每幅子地图
-    cfg.cbee.visualize.sample_rate             = 1; % 子地图可视化采样率，降低绘制点数以提高速度
+    cfg.cbee.visualize.sample_rate             = 0.2; % 子地图可视化采样率，降低绘制点数以提高速度
 
     % 处理选项
     cfg.cbee.options = struct();
@@ -158,5 +163,17 @@ function cfg = config()
     cfg.cbee.options.save_CBEE_data_results     = true; % 是否导出 CBEE 结果(图片/CSV/MAT)
     cfg.cbee.options.load_only                  = false; % 仅加载数据，不执行 CBEE 计算与导出。
     cfg.cbee.options.use_sparse                 = true;  % 是否使用稀疏版本 buildCbeeErrorGrid_sparse
+
+    % === KD-Tree / 距离查询相关选项 ===
+    % distance_method:
+    %   'bruteforce' (默认) 逐点暴力最近邻，适合点数较少或格/邻域较稀疏场景（无额外构建开销）
+    %   'kdtree'     对每个当前处理格的“邻域内各子图点集合”分别构建局部 KD 树，再做 knnsearch
+    %                适合邻域点数较大(>几百) 且存在重复最近邻查询 (nbr_averages * 子图数 较大) 的情形
+    % kdtree_min_points:
+    %   低于该阈值的子图邻域点仍走暴力路径，避免小样本构建 KD 树的额外管理成本。
+    % 启用方式: 将 distance_method 设为 'kdtree'
+    cfg.cbee.options.distance_method    = 'bruteforce'; % 'bruteforce' | 'kdtree'
+    cfg.cbee.options.kdtree_min_points  = 20;           % 构建 KD 树的最小点数
+    % 预留: 未来可增加 cfg.cbee.options.strict_random = false; 以在并行下保持严格复现
 
 end
