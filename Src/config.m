@@ -6,7 +6,8 @@ function cfg = config()
 
     cfg = struct();
     
-%% === global（全局：含可视化、通用保存） ===
+%% === global（全局：含可视化、通用保存
+
     cfg.global = struct();
 
     % 可视化参数（全局共享）
@@ -149,6 +150,13 @@ function cfg = config()
     cfg.cbee.num_workers         = []; % int/[] 并行工作线程数；[] 表示由 MATLAB 自动管理。
     cfg.cbee.random_seed         = 42; % 随机种子，便于复现实验；[] 表示不固定。
 
+    % 高程插值与掩码参数
+    cfg.cbee.elevation_method      = 'mean';   % 'mean'|'median'|'max'|'min' 格内高程聚合方法
+    cfg.cbee.elevation_interp      = 'linear'; % 'none'|'linear'|'nearest'|'natural' 高程插值方法
+    cfg.cbee.elevation_smooth_win  = 0;        % int>=0 高程平滑窗口大小(奇数),0表示不平滑
+    cfg.cbee.elevation_mask_enable = true;     % bool 是否启用距离掩码,避免过度插值产生假数据
+    cfg.cbee.elevation_mask_radius = 2.0;      % double>0 掩码半径(格子单位):只保留距真实数据该范围内的插值结果
+
     % 可视化
     cfg.cbee.visualize = struct();
     cfg.cbee.visualize.enable                  = true; % 是否在流程中进行可视化
@@ -162,16 +170,6 @@ function cfg = config()
     cfg.cbee.options.save_optimized_submaps     = true; % 是否将优化后的子地图持久化到磁盘
     cfg.cbee.options.save_CBEE_data_results     = true; % 是否导出 CBEE 结果(图片/CSV/MAT)
     cfg.cbee.options.load_only                  = false; % 仅加载数据，不执行 CBEE 计算与导出。
-    cfg.cbee.options.use_sparse                 = true;  % 是否使用稀疏版本 buildCbeeErrorGrid_sparse
-
-    % === KD-Tree / 距离查询相关选项 ===
-    % distance_method:
-    %   'bruteforce' (默认) 逐点暴力最近邻，适合点数较少或格/邻域较稀疏场景（无额外构建开销）
-    %   'kdtree'     对每个当前处理格的“邻域内各子图点集合”分别构建局部 KD 树，再做 knnsearch
-    %                适合邻域点数较大(>几百) 且存在重复最近邻查询 (nbr_averages * 子图数 较大) 的情形
-    % kdtree_min_points:
-    %   低于该阈值的子图邻域点仍走暴力路径，避免小样本构建 KD 树的额外管理成本。
-    % 启用方式: 将 distance_method 设为 'kdtree'
     cfg.cbee.options.distance_method    = 'bruteforce'; % 'bruteforce' | 'kdtree'
     cfg.cbee.options.kdtree_min_points  = 20;           % 构建 KD 树的最小点数
     % 预留: 未来可增加 cfg.cbee.options.strict_random = false; 以在并行下保持严格复现

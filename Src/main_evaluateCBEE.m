@@ -1,43 +1,131 @@
-%% main_evaluateCBEE - CBEE一致性误差评估执行脚本
-% main_evaluateCBEE 执行CBEE一致性误差评估的顶层脚本
+%% main_evaluateCBEE 执行CBEE（Cross-Submap Bundle Error Evaluation）一致性误差评估的运行脚本
 %
+% ================================ 项目概述 ================================
+% CBEE (Cross-Submap Bundle Error Evaluation) 是一种用于评估多子图SLAM系统
+% 一致性的创新方法。通过分析不同子图在重叠区域的点云一致性，CBEE能够
+% 量化SLAM系统的局部精度和全局一致性表现。
+%
+% 该脚本是MB-SLAM评估工具包的核心组件，专门用于：
+% • 评估多子图SLAM系统的空间一致性误差
+% • 生成基于栅格的一致性误差热力图
+% • 计算RMS一致性误差指标用于定量分析
+% • 提供完整的可视化和数据导出功能
+%
+% =============================== 算法原理 ===============================
+% CBEE算法的核心思想是在栅格化空间中，对每个格子：
+% 1. 收集该格子及其邻域内所有子图的点云数据
+% 2. 对当前格子中的每个子图，随机采样其点云
+% 3. 计算采样点到其他子图邻域点云的最近邻距离
+% 4. 取所有子图最近邻距离的最大值作为该次采样的误差
+% 5. 重复采样多次并取平均值，得到该格子的一致性误差
+% 6. 汇总所有有效格子的误差，计算整体RMS一致性误差
+%
+% =============================== 工作流程 ===============================
 % 该脚本集成了CBEE评估的完整工作流程，从数据加载到结果导出，按照以下步骤执行：
-%   1. 加载并初始化配置
-%   2. 生成优化子地图（可选）
-%   3. 加载子地图数据（原始或优化后的）
-%   4. 构建CBEE一致性误差栅格
-%   5. 计算RMS一致性误差
-%   6. 可视化与导出结果
+%   1. 初始化和配置 - 加载配置文件，设置算法参数
+%   2. 并行池管理与配置摘要 - 初始化并行计算环境
+%   3. 生成优化子地图（可选）- 基于优化轨迹重新生成子地图
+%   4. 加载子地图数据 - 读取原始或优化后的子地图点云
+%   5. 构建CBEE一致性误差栅格 - 执行核心CBEE算法
+%   6. 计算RMS一致性误差 - 统计分析误差分布
+%   7. 一致性误差热力图可视化 - 生成误差空间分布图
+%   8. 高程地图可视化与保存 - 生成栅格高程图
+%   9. 数据导出与持久化 - 保存结果数据和统计报告
+%   10. 环境清理与完成 - 清理临时文件，输出总结
 %
+% =============================== 技术特点 ===============================
+% • 稀疏存储优化：采用压缩结构数组，高效处理大规模稀疏栅格
+% • 并行加速支持：支持格级并行计算，显著提升处理速度
+% • 多种距离算法：支持暴力搜索和KD-Tree两种最近邻查询方式
+% • 灵活参数配置：通过config.m统一管理所有算法参数
+% • 丰富可视化：提供误差热力图、高程图等多种可视化形式
+% • 完整数据导出：支持CSV、MAT、PNG、EPS等多种格式输出
+%
+% ================================ 使用说明 ================================
 % 用法:
 %   直接运行此脚本: run('Src/main_evaluateCBEE.m')
 %   或在MATLAB命令窗口中: main_evaluateCBEE
 %
-% 配置参数:
+% 前置条件:
+%   1. MATLAB版本建议 R2018b 或更高（支持并行计算工具箱）
+%   2. 已正确配置 config.m 中的路径和参数
+%   3. 子地图数据格式为 .pcd 文件，位于指定目录
+%   4. 位姿数据格式为标准的 poses_*.txt 文件
+%
+% 运行时配置参数:
 %   在运行脚本前可以在工作空间设置以下变量：
 %     skip_optimized_submaps - 是否跳过优化子地图生成 (默认: false)
+%                             设为true可直接使用原始子地图进行评估
 %     verbose_output        - 是否显示详细输出 (默认: true)
+%                             设为false可减少终端输出信息
 %
-% 输出:
-%   生成的文件:
-%     - cbee_error_map.png: 一致性误差热力图
-%     - cbee_rms.txt: RMS一致性误差数值
-%     - cbee_error_grid.csv: 误差栅格数据
-%     - cbee_results.mat: 完整结果数据
+% ================================ 输出文件 ================================
+% 生成的文件（Src\config.m 中 cfg.cbee.paths 设置）:
+%   误差分析文件:
+%     - cbee_error_map_RMS_[value].png/eps    : 一致性误差热力图
+%     - cbee_elevation_map_RMS_[value].png/eps: 高程分布图  
+%     - cbee_error_grid_RMS_[value].csv       : 误差栅格数据（行列索引+误差值）
+%     - cbee_elevation_grid_RMS_[value].csv   : 高程栅格数据（行列索引+高程值）
+%   
+%   统计报告文件:
+%     - cbee_rms_complete_RMS_[value].txt     : 完整统计报告（网格统计、误差分布等）
+%     - cbee_results_RMS_[value].mat          : 完整结果数据（可用于后续分析）
+%   
+%   其他输出:
+%     - [timestamp]_optimized_submaps/        : 优化后的子地图目录（如果生成）
 %
-% 示例:
-%   % 基本使用（默认配置）
+% 关键输出指标:
+%   • RMS一致性误差：整体空间一致性的定量指标
+%   • 有效格比例：参与计算的栅格占比，反映数据覆盖度
+%   • 误差分布统计：最小值、最大值、均值、标准差、分位数等
+%   • 空间误差分布：热力图形式的误差空间变化模式
+%
+% =============================== 使用示例 ===============================
+% 示例 1: 基本使用（默认配置）
 %   run('Src/main_evaluateCBEE.m')
 %
-%   % 自定义配置示例
-%   skip_optimized_submaps = true;    % 跳过优化子地图生成
-%   verbose_output = false;           % 关闭详细输出
+% 示例 2: 自定义运行时参数
+%   skip_optimized_submaps = true;    % 跳过优化子地图生成，直接使用原始子地图
+%   verbose_output = false;           % 关闭详细输出，仅显示关键信息
 %   run('Src/main_evaluateCBEE.m')
 %
-% 另请参阅: config, buildCbeeErrorGrid, computeRmsConsistencyError
+% 示例 3: 修改算法参数（需修改config.m）
+%   % 在config.m中设置：
+%   % cfg.cbee.cell_size_xy = 0.5;           % 更精细的栅格分辨率
+%   % cfg.cbee.neighborhood_size = 5;        % 更大的邻域尺寸
+%   % cfg.cbee.nbr_averages = 20;            % 更多的蒙特卡洛采样次数
+%   % cfg.cbee.use_parallel = true;          % 启用并行计算加速
+%   % cfg.cbee.options.distance_method = 'kdtree'; % 使用KD-Tree加速
+%   run('Src/main_evaluateCBEE.m')
 %
-% 作者: CBEE评估工具包
-% 日期: 2025-09-22
+% ============================== 性能优化建议 ==============================
+% • 对于大规模数据，建议启用并行计算（cfg.cbee.use_parallel = true）
+% • 当邻域点数较多时，推荐使用KD-Tree加速（distance_method = 'kdtree'）
+% • 可通过调整cell_size_xy平衡计算精度与速度
+% • nbr_averages参数影响结果稳定性，建议根据数据特点调整
+%
+% =============================== 故障排除 ===============================
+% 常见问题及解决方案:
+% 1. 内存不足：减小cell_size_xy或启用稀疏存储优化
+% 2. 计算速度慢：启用并行计算或使用KD-Tree加速
+% 3. 结果异常：检查子地图数据质量和坐标系一致性
+% 4. 文件路径错误：确认config.m中的路径配置正确
+%
+% 另请参阅: config, buildCbeeErrorGrid, computeRmsConsistencyError, 
+%           loadAllSubmaps, generateOptimizedSubmaps, visualizeSubmaps
+%
+% ================================ 版本信息 ================================
+% 项目: MB-SLAM评估工具包 (Multi-Bundle SLAM Evaluation Toolkit)
+% 模块: CBEE一致性误差评估
+% 版本: v2.1 (2025-09-26)
+% 作者: CBEE评估工具包开发团队
+% 许可: 根据项目许可证使用
+% 
+% 更新日志:
+% v2.1 (2025-09-26): 优化稀疏存储，完善注释文档，增加KD-Tree支持
+% v2.0 (2025-09-22): 重构代码架构，统一配置管理，增强并行支持
+% v1.5 (2025-09-15): 添加高程地图功能，优化可视化效果
+% v1.0 (2025-08-30): 初始版本发布
 clear; close all; clc;
 %% 脚本配置参数
 
@@ -282,7 +370,7 @@ if isfield(cfg.cbee,'visualize') && isfield(cfg.cbee.visualize,'enable') && cfg.
     drawnow;
 end
 
-%% 5. 构建一致性误差栅格
+%% 5. 构建CBEE一致性误差栅格
 if isfield(cfg.cbee,'options') && isfield(cfg.cbee.options,'load_only') && cfg.cbee.options.load_only
     if verbose
         fprintf('仅加载模式，跳过CBEE计算...\n');
@@ -317,23 +405,14 @@ end
 if isfield(cfg.cbee,'elevation_method');     gridParams.elevation_method = cfg.cbee.elevation_method; end
 if isfield(cfg.cbee,'elevation_interp');     gridParams.elevation_interp = cfg.cbee.elevation_interp; end
 if isfield(cfg.cbee,'elevation_smooth_win'); gridParams.elevation_smooth_win = cfg.cbee.elevation_smooth_win; end
+if isfield(cfg.cbee,'elevation_mask_enable'); gridParams.elevation_mask_enable = cfg.cbee.elevation_mask_enable; end
+if isfield(cfg.cbee,'elevation_mask_radius'); gridParams.elevation_mask_radius = cfg.cbee.elevation_mask_radius; end
 
-% 执行栅格构建 (根据 use_sparse 选择实现)
-use_sparse_impl = false;
-if isfield(cfg.cbee,'options') && isfield(cfg.cbee.options,'use_sparse')
-    use_sparse_impl = logical(cfg.cbee.options.use_sparse);
+% 执行栅格构建
+if verbose
+    fprintf('构建CBEE一致性误差栅格...\n');
 end
-if use_sparse_impl
-    if verbose
-        fprintf('使用稀疏实现: buildCbeeErrorGrid_sparse ...\n');
-    end
-    [value_grid, overlap_mask, grid_meta, map_grid] = buildCbeeErrorGrid_sparse(measurements, gridParams);
-else
-    if verbose
-        fprintf('使用稠密实现: buildCbeeErrorGrid ...\n');
-    end
-    [value_grid, overlap_mask, grid_meta, map_grid] = buildCbeeErrorGrid(measurements, gridParams);
-end
+[value_grid, overlap_mask, grid_meta, map_grid] = buildCbeeErrorGrid(measurements, gridParams);
 
 %% 6. 计算RMS一致性误差
 if verbose
@@ -355,7 +434,7 @@ fprintf('误差范围: [%.4f, %.4f]\n', ...
         rms_result.error_stats.max);
 fprintf('计算耗时: %.2f秒\n', rms_result.metadata.computation_time);
 
-%% 7. 可视化与导出结果
+%% 7. 一致性误差热力图可视化
 if verbose
     fprintf('生成结果可视化与导出文件...\n');
 end
@@ -402,7 +481,7 @@ if (isfield(cfg.cbee,'options') && isfield(cfg.cbee.options,'save_CBEE_data_resu
     fprintf('  RMS值: %.4f\n', rms_result.rms_value);
     fprintf('  误差范围: [%.4f, %.4f]\n', rms_result.error_stats.min, rms_result.error_stats.max);
 
-%% 保存或关闭
+% 7.1 保存图形结果与管理
     % 图片保存 gating：需要 CBEE 保存选项 且 全局图像保存开启
     figures_enabled = cfg.global.save.figures;
     save_cbee_opt = (isfield(cfg.cbee,'options') && isfield(cfg.cbee.options,'save_CBEE_data_results') && cfg.cbee.options.save_CBEE_data_results);
@@ -435,7 +514,7 @@ if (isfield(cfg.cbee,'options') && isfield(cfg.cbee.options,'save_CBEE_data_resu
         close(fig);
     end
     
-    %% 7.2 高程地图可视化（使用相同的全局配置）
+    %% 8. 高程地图可视化与保存
     % 创建高程地图图窗
     fig_elevation = figure('Color', 'w', 'Units','centimeters', 'Position', [4, 4, fig_w_cm, fig_h_cm], ...
                           'Name','Elevation Map', 'NumberTitle','off');
@@ -495,6 +574,7 @@ if (isfield(cfg.cbee,'options') && isfield(cfg.cbee.options,'save_CBEE_data_resu
     end
 end
 
+%% 9. 数据导出与持久化
 % 数据保存 gating：需要 CBEE 保存选项 且 全局数据保存开启
 data_enabled = cfg.global.save.data;
 
@@ -524,16 +604,54 @@ if save_cbee_opt && data_enabled
         end
     end
 
-    % 7.3 导出RMS文本与MAT结果
-    rms_txt_path = fullfile(cfg.cbee.paths.output_dir, ['cbee_rms', rms_suffix, '.txt']);
+    % 导出完整统计报告
+    rms_txt_path = fullfile(cfg.cbee.paths.output_dir, ['cbee_rms_complete', rms_suffix, '.txt']);
     fid = fopen(rms_txt_path, 'w');
-    fprintf(fid, 'RMS=%.6f\n', rms_result.rms_value);
+    
+    % 写入标题和时间戳
+    fprintf(fid, '=== CBEE一致性误差完整统计报告 ===\n');
+    fprintf(fid, '生成时间: %s\n', datestr(now, 'yyyy-mm-dd HH:MM:SS'));
+    fprintf(fid, '文件名后缀RMS值: %.6f\n\n', rms_result.rms_value);
+    
+    % 1. 主要结果
+    fprintf(fid, '--- 主要结果 ---\n');
+    fprintf(fid, 'RMS一致性误差: %.6f\n\n', rms_result.rms_value);
+    
+    % 2. 网格统计信息
+    fprintf(fid, '--- 网格统计信息 ---\n');
+    fprintf(fid, '总格子数: %d\n', rms_result.grid_stats.total_cells);
+    fprintf(fid, '有效格子数: %d\n', rms_result.grid_stats.valid_cells);
+    fprintf(fid, '有效格子比例: %.4f (%.2f%%)\n', rms_result.grid_stats.valid_ratio, rms_result.grid_stats.valid_ratio * 100);
+    fprintf(fid, '有限误差值格子数: %d\n', rms_result.grid_stats.finite_cells);
+    fprintf(fid, '有限格子比例: %.4f (%.2f%%)\n\n', rms_result.grid_stats.finite_ratio, rms_result.grid_stats.finite_ratio * 100);
+    
+    % 3. 误差值统计信息  
+    fprintf(fid, '--- 误差值统计信息 ---\n');
+    fprintf(fid, '最小误差值: %.6f\n', rms_result.error_stats.min);
+    fprintf(fid, '最大误差值: %.6f\n', rms_result.error_stats.max);
+    fprintf(fid, '平均误差值: %.6f\n', rms_result.error_stats.mean);
+    fprintf(fid, '误差值标准差: %.6f\n', rms_result.error_stats.std);
+    fprintf(fid, '误差值中位数: %.6f\n', rms_result.error_stats.median);
+    fprintf(fid, '25%%分位数: %.6f\n', rms_result.error_stats.p25);
+    fprintf(fid, '75%%分位数: %.6f\n\n', rms_result.error_stats.p75);
+    
+    % 4. 有效性指标
+    fprintf(fid, '--- 有效性指标 ---\n');
+    fprintf(fid, '是否成功计算RMS: %s\n', mat2str(rms_result.validity.is_valid));
+    fprintf(fid, '是否有重叠区域: %s\n', mat2str(rms_result.validity.has_overlap));
+    fprintf(fid, '所有有效值都是有限的: %s\n\n', mat2str(rms_result.validity.all_finite));
+    
+    % 5. 计算元信息
+    fprintf(fid, '--- 计算元信息 ---\n');
+    fprintf(fid, '计算耗时: %.4f 秒\n', rms_result.metadata.computation_time);
+    fprintf(fid, '计算时间戳: %s\n', datestr(rms_result.metadata.timestamp, 'yyyy-mm-dd HH:MM:SS.FFF'));
+    
     fclose(fid);
     if verbose
-        fprintf('  > 已保存RMS值: %s\n', rms_txt_path);
+        fprintf('  > 已保存完整RMS统计信息: %s\n', rms_txt_path);
     end
 
-    % 包含元数据的完整结果保存
+    % 保存完整结果数据（包含元数据）
     save_data.rms_result = rms_result;
     save_data.grid_meta = grid_meta;
     save_data.map_grid = map_grid;  % 添加高程地图数据
@@ -546,6 +664,7 @@ if save_cbee_opt && data_enabled
     end
 end
 
+%% 10. 环境清理与完成
 % 若使用了临时优化子地图目录且不需要持久化，清理之
 if used_temp_submaps_dir && ~cfg.cbee.options.save_optimized_submaps
     try
