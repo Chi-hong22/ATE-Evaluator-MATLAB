@@ -37,7 +37,7 @@ function [value_grid, overlap_mask, grid_meta, map_grid] = buildCbeeErrorGrid(me
     %       .elevation_interp    ('none'|'linear'|'nearest'|'natural', 默认 'linear')
     %       .elevation_smooth_win(int, 默认 0)
     %       .elevation_mask_enable(bool, 默认 true)  % 是否启用距离掩码，避免过度插值
-    %       .elevation_mask_radius(double, 默认 3.0) % 掩码半径：只保留距离真实数据点该距离内的插值结果(单位:格子)
+    %       .elevation_mask_radius(double, 默认 2.0) % 掩码半径：只保留距离真实数据点该距离内的插值结果(单位:格子)
     %       .use_parallel        (bool, 默认 false)  -- 当前主循环仍为串行
     %       .distance_method     ('bruteforce'|'kdtree', 默认 'bruteforce')  % 已实现: 局部 per-submap KD 树
     %       .kdtree_min_points   (int, 构建 KD 树最少点数, 默认 20)        % 已实现: 小于阈值回退暴力

@@ -127,14 +127,17 @@ function cfg = config()
     % cfg.cbee.paths.gt_pcd_dir       = 'Data/CBEE/smallTest/submaps';
     % cfg.cbee.paths.poses_original   = 'Data/CBEE/smallTest/poses_original.txt';
     % cfg.cbee.paths.poses_optimized  = 'Data/CBEE/smallTest/poses_optimized.txt';
+    % cfg.cbee.paths.poses_corrupted  = 'Data/CBEE/smallTest/poses_corrupted.txt';
 
-    % cfg.cbee.paths.gt_pcd_dir       = 'Data/CBEE/Comb_noINS/submaps';
-    % cfg.cbee.paths.poses_original   = 'Data/CBEE/Comb_noINS/Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.5/poses_original.txt';
-    % cfg.cbee.paths.poses_optimized  = 'Data/CBEE/Comb_noINS/Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.5/poses_optimized.txt';
-    
-    cfg.cbee.paths.gt_pcd_dir       = 'Data/CBEE/NESP_noINS/submaps';
-    cfg.cbee.paths.poses_original   = 'Data/CBEE/NESP_noINS/NESP_noINS_seed40_yaw_0.05_0.005rad/poses_original.txt';
-    cfg.cbee.paths.poses_optimized  = 'Data/CBEE/NESP_noINS/NESP_noINS_seed40_yaw_0.05_0.005rad/poses_optimized.txt';
+    cfg.cbee.paths.gt_pcd_dir       = 'Data/CBEE/Comb_noINS/submaps';
+    cfg.cbee.paths.poses_original   = 'Data/CBEE/Comb_noINS/Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.5/poses_original.txt';
+    cfg.cbee.paths.poses_optimized  = 'Data/CBEE/Comb_noINS/Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.5/poses_optimized.txt';
+    cfg.cbee.paths.poses_corrupted  = 'Data/CBEE/Comb_noINS/Comb_noINS_seed40_yaw_0.05_0.005rad_overlapcoverage_0.5/poses_corrupted.txt';
+
+    % cfg.cbee.paths.gt_pcd_dir       = 'Data/CBEE/NESP_noINS/submaps';
+    % cfg.cbee.paths.poses_original   = 'Data/CBEE/NESP_noINS/NESP_noINS_seed40_yaw_0.05_0.005rad/poses_original.txt';
+    % cfg.cbee.paths.poses_optimized  = 'Data/CBEE/NESP_noINS/NESP_noINS_seed40_yaw_0.05_0.005rad/poses_optimized.txt';
+    % cfg.cbee.paths.poses_corrupted  = 'Data/CBEE/NESP_noINS/NESP_noINS_seed40_yaw_0.05_0.005rad/poses_corrupted.txt';
 
 
     % CBEE 输出路径配置

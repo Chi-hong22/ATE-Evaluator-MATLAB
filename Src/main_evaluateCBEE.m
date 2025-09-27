@@ -265,7 +265,7 @@ actualUseParallel = false;
 poolInfo = struct();
 if cfg.cbee.use_parallel
     if verbose
-        fprintf('初始化并行池...\n');
+        fprintf('\n[Parallel] 初始化并行池...\n');
     end
     seedVal = [];
     if isfield(cfg.cbee,'random_seed') && ~isempty(cfg.cbee.random_seed)
@@ -310,7 +310,7 @@ used_temp_submaps_dir = false;
 if isfield(cfg.cbee,'options') && isfield(cfg.cbee.options,'generate_optimized_submaps') && cfg.cbee.options.generate_optimized_submaps
     try
         if verbose
-            fprintf('生成优化子地图...\n');
+            fprintf('\n[Submaps] 生成优化子地图...\n');
         end
         % 选择输出目录：根据是否持久化决定输出到正式目录或临时目录
     target_submaps_dir = cfg.cbee.paths.output_submaps_dir;
@@ -318,10 +318,22 @@ if isfield(cfg.cbee,'options') && isfield(cfg.cbee.options,'generate_optimized_s
         if ~save_to_disk
             used_temp_submaps_dir = true;
         end
+    
+    % 计算经过SLAM优化后的误差
+    % opt_pcd_dir = generateOptimizedSubmaps(cfg.cbee.paths.gt_pcd_dir, ...
+    %                                         cfg.cbee.paths.poses_original, ...
+    %                                         cfg.cbee.paths.poses_optimized, ...
+    %                                         target_submaps_dir, ...
+    %                                         'UseParallel',actualUseParallel, ...
+    %                                         'Verbose', verbose, ...
+    %                                         'Verify', true, ...
+    %                                         'cfg', cfg, ...
+    %                                         'SaveToDisk', save_to_disk);
 
+    % 计算经过SLAM优化前的误差
     opt_pcd_dir = generateOptimizedSubmaps(cfg.cbee.paths.gt_pcd_dir, ...
                                             cfg.cbee.paths.poses_original, ...
-                                            cfg.cbee.paths.poses_optimized, ...
+                                            cfg.cbee.paths.poses_corrupted, ...
                                             target_submaps_dir, ...
                                             'UseParallel',actualUseParallel, ...
                                             'Verbose', verbose, ...
@@ -334,7 +346,7 @@ if isfield(cfg.cbee,'options') && isfield(cfg.cbee.options,'generate_optimized_s
         end
 
         if verbose
-            fprintf('优化子地图已生成至: %s\n', opt_pcd_dir);
+            fprintf('[Submaps] 优化子地图已生成至: %s\n', opt_pcd_dir);
         end
     catch ME
         warning('生成优化子地图失败: %s\n回退使用原始子地图...\n', string(ME.message));
@@ -343,7 +355,7 @@ end
 
 %% 4. 加载子地图数据
 if verbose
-    fprintf('加载子地图数据...\n');
+    fprintf('\n[Submaps] 加载子地图数据...\n');
 end
 
 measurements = loadAllSubmaps(opt_pcd_dir, ...
@@ -354,7 +366,7 @@ measurements = loadAllSubmaps(opt_pcd_dir, ...
 % 如果需要，可视化加载的子地图
 if isfield(cfg.cbee,'visualize') && isfield(cfg.cbee.visualize,'enable') && cfg.cbee.visualize.enable
     if verbose
-        fprintf('可视化子地图...\n');
+        fprintf('[Submaps] 可视化子地图...\n');
     end
     sample_rate_val = cfg.cbee.visualize.sample_rate;
     if isfield(cfg.cbee.visualize,'sample_rate'); sample_rate_val = cfg.cbee.visualize.sample_rate; end
@@ -373,13 +385,13 @@ end
 %% 5. 构建CBEE一致性误差栅格
 if isfield(cfg.cbee,'options') && isfield(cfg.cbee.options,'load_only') && cfg.cbee.options.load_only
     if verbose
-        fprintf('仅加载模式，跳过CBEE计算...\n');
+        fprintf('\n[CBEE] 仅加载模式，跳过CBEE计算...\n');
     end
     return;
 end
 
 if verbose
-    fprintf('构建CBEE一致性误差栅格...\n');
+    fprintf('[CBEE] 构建CBEE一致性误差栅格...\n');
 end
 
 % 准备网格参数
@@ -409,14 +421,11 @@ if isfield(cfg.cbee,'elevation_mask_enable'); gridParams.elevation_mask_enable =
 if isfield(cfg.cbee,'elevation_mask_radius'); gridParams.elevation_mask_radius = cfg.cbee.elevation_mask_radius; end
 
 % 执行栅格构建
-if verbose
-    fprintf('构建CBEE一致性误差栅格...\n');
-end
 [value_grid, overlap_mask, grid_meta, map_grid] = buildCbeeErrorGrid(measurements, gridParams);
 
 %% 6. 计算RMS一致性误差
 if verbose
-    fprintf('计算RMS一致性误差...\n');
+    fprintf('[RMS] 计算RMS一致性误差...\n');
 end
 
 % 计算RMS并获取完整统计信息
@@ -435,13 +444,13 @@ fprintf('误差范围: [%.4f, %.4f]\n', ...
 fprintf('计算耗时: %.2f秒\n', rms_result.metadata.computation_time);
 
 %% 7. 一致性误差热力图可视化
-if verbose
-    fprintf('生成结果可视化与导出文件...\n');
-end
 
 % 仅在需要保存图像或需要显示时创建图窗
 if (isfield(cfg.cbee,'options') && isfield(cfg.cbee.options,'save_CBEE_data_results') && cfg.cbee.options.save_CBEE_data_results) ...
     || (isfield(cfg.cbee,'visualize') && isfield(cfg.cbee.visualize,'enable') && cfg.cbee.visualize.enable)
+    if verbose
+    fprintf('[CBEE] 热力图可视化...\n');
+    end
     % 一致性误差热力图（透明显示无效格）
     gv = cfg.global.visual;
     axis_fs = round(gv.font_size_base * gv.font_size_multiple);
@@ -476,13 +485,14 @@ if (isfield(cfg.cbee,'options') && isfield(cfg.cbee.options,'save_CBEE_data_resu
     ylabel('Y (m)', 'FontName', gv.font_name, 'FontSize', axis_fs);
 
     % 终端输出统计信息（替代图内文本框）
-    fprintf('\n[CBEE 热力图统计]\n');
+    fprintf('\n[CBEE] 热力图统计数据\n');
     fprintf('  有效格数: %d (%.1f%%%%)\n', rms_result.grid_stats.valid_cells, rms_result.grid_stats.valid_ratio * 100);
     fprintf('  RMS值: %.4f\n', rms_result.rms_value);
     fprintf('  误差范围: [%.4f, %.4f]\n', rms_result.error_stats.min, rms_result.error_stats.max);
 
 % 7.1 保存图形结果与管理
     % 图片保存 gating：需要 CBEE 保存选项 且 全局图像保存开启
+    fprintf('[CBEE] 热力图保存文件...\n');
     figures_enabled = cfg.global.save.figures;
     save_cbee_opt = (isfield(cfg.cbee,'options') && isfield(cfg.cbee.options,'save_CBEE_data_results') && cfg.cbee.options.save_CBEE_data_results);
     if save_cbee_opt && figures_enabled
@@ -516,6 +526,7 @@ if (isfield(cfg.cbee,'options') && isfield(cfg.cbee.options,'save_CBEE_data_resu
     
     %% 8. 高程地图可视化与保存
     % 创建高程地图图窗
+    fprintf('\n[Elevation] 创建并保存高程地图图窗...\n');
     fig_elevation = figure('Color', 'w', 'Units','centimeters', 'Position', [4, 4, fig_w_cm, fig_h_cm], ...
                           'Name','Elevation Map', 'NumberTitle','off');
     
@@ -577,7 +588,7 @@ end
 %% 9. 数据导出与持久化
 % 数据保存 gating：需要 CBEE 保存选项 且 全局数据保存开启
 data_enabled = cfg.global.save.data;
-
+fprintf('\n[Metadata] 保存元数据...\n');
 if save_cbee_opt && data_enabled
     % 导出栅格CSV（仅导出有效格）
     [H, W] = size(value_grid);
